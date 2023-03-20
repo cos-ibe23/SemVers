@@ -28,21 +28,26 @@ app.get("/screams", (req, res) => {
 exports.createScream = functions.https.onRequest((req, res) => {
   const response = req.body;
 
+  console.log(response)
+
   admin
     .firestore()
     .collection("screams")
     .add({
-      body: response.body,
-      userHandle: response.userHandle,
+      ...response,
       createdAt: admin?.firestore?.Timestamp?.fromDate(new Date()),
     })
     .then((data) => {
-      res.json({ message: `document ${data.id} created successfully` });
+      res.json({
+        message: `document ${data.id} created successfully`,
+        ...data,
+      });
     })
     .catch((err) => {
       res.status(500).json("Something went wrong");
       console.error(err);
     });
+
 });
 
 exports.api = functions.https.onRequest(app);

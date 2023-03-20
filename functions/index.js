@@ -4,6 +4,7 @@ const admin = require("firebase-admin");
 const { getDatabase } = require("firebase-admin/database");
 
 admin.initializeApp();
+admin.firestore().settings({ ignoreUndefinedProperties: true });
 
 const express = require("express");
 const app = express();
@@ -25,8 +26,7 @@ app.get("/screams", (req, res) => {
 });
 
 exports.createScream = functions.https.onRequest((req, res) => {
-
-  const response = req.body
+  const response = req.body;
 
   admin
     .firestore()

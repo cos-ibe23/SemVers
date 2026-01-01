@@ -1,0 +1,24 @@
+meta {
+  name: Get Me
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/auth/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+docs {
+  Get the current user with profile information.
+
+  Returns:
+  - user: Basic user info (id, email, name, role)
+  - session: Current session info
+  - profile: Shipper profile (null if not onboarded)
+}

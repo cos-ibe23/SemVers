@@ -1,0 +1,32 @@
+meta {
+  name: List Shipper Clients
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/shipper-clients?page=1&limit=20
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+params:query {
+  page: 1
+  limit: 20
+  ~search: john
+}
+
+docs {
+  List all clients linked to the authenticated shipper.
+
+  Query params:
+  - page: Page number (default: 1)
+  - limit: Items per page (default: 20, max: 100)
+  - search: Optional search term (searches client name, email)
+
+  Returns paginated list of shipper-client relationships with user info.
+}

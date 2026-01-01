@@ -1,0 +1,26 @@
+meta {
+  name: Remove Shipper Client
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/v1/shipper-clients/client-001
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+docs {
+  Soft delete a shipper-client relationship.
+
+  The clientId in the URL is the user's ID (string).
+
+  The relationship is marked as deleted but not removed from the database.
+  The client user account is not affected.
+
+  Returns 404 if client not found or not linked to current shipper.
+}

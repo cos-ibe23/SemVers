@@ -8,18 +8,25 @@ import {
     searchPaginationQuerySchema,
 } from '../../../lib/openapi/helpers';
 
-// Client schema for responses
-const clientSchema = z.object({
-    id: z.number(),
-    ownerUserId: z.string(),
+// Client user schema (the actual user data)
+const clientUserSchema = z.object({
+    id: z.string(),
     name: z.string(),
-    email: z.string().nullable(),
-    phone: z.string().nullable(),
-    avatarUrl: z.string().nullable(),
-    createdAt: z.string(),
+    email: z.string(),
+    image: z.string().nullable(),
 });
 
-// GET /v1/clients - List clients with pagination and search
+// Shipper-client relationship schema
+const shipperClientSchema = z.object({
+    shipperId: z.string(),
+    clientId: z.string(),
+    nickname: z.string().nullable(),
+    phone: z.string().nullable(),
+    createdAt: z.string(),
+    client: clientUserSchema,
+});
+
+// GET /v1/clients - List shipper's clients with pagination and search
 export const listClients = createRoute({
     middleware: [authenticated],
     tags: ['v1-clients'],
@@ -29,13 +36,13 @@ export const listClients = createRoute({
         query: searchPaginationQuerySchema,
     },
     responses: {
-        200: jsonContent(paginatedSchema(clientSchema), 'List of clients'),
+        200: jsonContent(paginatedSchema(shipperClientSchema), 'List of clients'),
         401: jsonApiErrorContent('Not authenticated'),
     },
 });
 
-// POST /v1/clients - Create a new client
-export const createClient = createRoute({
+// POST /v1/clients - Add existing user as client or create new client user
+export const addClient = createRoute({
     middleware: [authenticated],
     tags: ['v1-clients'],
     method: 'post',
@@ -43,85 +50,94 @@ export const createClient = createRoute({
     request: {
         body: jsonContentRequired(
             z.object({
-                name: z.string().min(1).max(255),
+                // Either provide clientUserId to add existing user
+                clientUserId: z.string().optional(),
+                // Or provide name + email to create new client user
+                name: z.string().min(1).max(255).optional(),
                 email: z.string().email().optional(),
+                // Optional shipper-specific fields
+                nickname: z.string().max(255).optional(),
                 phone: z.string().max(50).optional(),
-            }),
-            'Client creation request'
+            }).refine(
+                (data) => data.clientUserId || (data.name && data.email),
+                { message: 'Either clientUserId or both name and email are required' }
+            ),
+            'Add client request'
         ),
     },
     responses: {
-        201: jsonContent(clientSchema, 'Client created'),
+        201: jsonContent(shipperClientSchema, 'Client added'),
+        400: jsonApiErrorContent('Bad request'),
         401: jsonApiErrorContent('Not authenticated'),
+        404: jsonApiErrorContent('Client user not found'),
         422: jsonApiErrorContent('Validation error'),
     },
 });
 
-// GET /v1/clients/:id - Get client by ID
+// GET /v1/clients/:clientId - Get client by user ID
 export const getClient = createRoute({
     middleware: [authenticated],
     tags: ['v1-clients'],
     method: 'get',
-    path: '/clients/{id}',
+    path: '/clients/{clientId}',
     request: {
         params: z.object({
-            id: z.coerce.number(),
+            clientId: z.string(),
         }),
     },
     responses: {
-        200: jsonContent(clientSchema, 'Client details'),
+        200: jsonContent(shipperClientSchema, 'Client details'),
         401: jsonApiErrorContent('Not authenticated'),
         404: jsonApiErrorContent('Client not found'),
     },
 });
 
-// PATCH /v1/clients/:id - Update client
+// PATCH /v1/clients/:clientId - Update shipper-client relationship
 export const updateClient = createRoute({
     middleware: [authenticated],
     tags: ['v1-clients'],
     method: 'patch',
-    path: '/clients/{id}',
+    path: '/clients/{clientId}',
     request: {
         params: z.object({
-            id: z.coerce.number(),
+            clientId: z.string(),
         }),
         body: jsonContentRequired(
             z.object({
-                name: z.string().min(1).max(255).optional(),
-                email: z.string().email().nullable().optional(),
+                nickname: z.string().max(255).nullable().optional(),
                 phone: z.string().max(50).nullable().optional(),
             }),
-            'Client update request'
+            'Update client request'
         ),
     },
     responses: {
-        200: jsonContent(clientSchema, 'Client updated'),
+        200: jsonContent(shipperClientSchema, 'Client updated'),
         401: jsonApiErrorContent('Not authenticated'),
         404: jsonApiErrorContent('Client not found'),
         422: jsonApiErrorContent('Validation error'),
     },
 });
 
-// DELETE /v1/clients/:id - Soft delete client
-export const deleteClient = createRoute({
+// DELETE /v1/clients/:clientId - Remove client (soft delete relationship)
+export const removeClient = createRoute({
     middleware: [authenticated],
     tags: ['v1-clients'],
     method: 'delete',
-    path: '/clients/{id}',
+    path: '/clients/{clientId}',
     request: {
         params: z.object({
-            id: z.coerce.number(),
+            clientId: z.string(),
         }),
     },
     responses: {
-        200: jsonContent(z.object({ success: z.boolean() }), 'Client deleted'),
+        200: jsonContent(z.object({ success: z.boolean() }), 'Client removed'),
         401: jsonApiErrorContent('Not authenticated'),
         404: jsonApiErrorContent('Client not found'),
     },
 });
 
 export type ListClientsRoute = typeof listClients;
-export type CreateClientRoute = typeof createClient;
+export type AddClientRoute = typeof addClient;
 export type GetClientRoute = typeof getClient;
 export type UpdateClientRoute = typeof updateClient;
-export type DeleteClientRoute = typeof deleteClient;
+export type RemoveClientRoute = typeof removeClient;

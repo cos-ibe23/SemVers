@@ -1,0 +1,23 @@
+meta {
+  name: Get Shipper Client
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v1/shipper-clients/client-001
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+docs {
+  Get a specific client by their user ID.
+
+  The clientId in the URL is the user's ID (string), not a numeric ID.
+
+  Returns 404 if client not found or not linked to current shipper.
+}

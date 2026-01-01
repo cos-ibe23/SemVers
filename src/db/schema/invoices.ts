@@ -1,7 +1,6 @@
 import { pgTable, serial, text, integer, varchar, decimal, timestamp, pgEnum } from 'drizzle-orm/pg-core';
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { user } from './auth';
-import { clients } from './clients';
 import { pickups } from './pickups';
 import { boxes } from './boxes';
 
@@ -12,8 +11,8 @@ export const invoices = pgTable('invoices', {
     ownerUserId: text('owner_user_id')
         .notNull()
         .references(() => user.id, { onDelete: 'cascade' }),
-    clientId: integer('client_id')
-        .references(() => clients.id, { onDelete: 'set null' }),
+    clientUserId: text('client_user_id')
+        .references(() => user.id, { onDelete: 'set null' }),
     pickupId: integer('pickup_id')
         .references(() => pickups.id, { onDelete: 'set null' }),
     boxId: integer('box_id')

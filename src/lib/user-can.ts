@@ -1,156 +1,60 @@
 import type { User } from '../db/auth';
+import {
+    UserRoles,
+    Resources,
+    Actions,
+    PermissionConditions,
+    rolePermissions,
+    hasFullAccess,
+    type Resource,
+    type Action,
+    type PermissionCondition,
+    type PermissionValue,
+} from '../permissions';
 
-// User roles for the Imbod platform
-export const UserRoles = {
-    ADMIN: 'ADMIN',
-    SHIPPER: 'SHIPPER',
-} as const;
-
-export type UserRole = (typeof UserRoles)[keyof typeof UserRoles];
-
-// Resources that can be accessed
-export const Resources = {
-    CLIENTS: 'clients',
-    PICKUPS: 'pickups',
-    ITEMS: 'items',
-    BOXES: 'boxes',
-    SHIPMENTS: 'shipments',
-    PICKUP_REQUESTS: 'pickup_requests',
-    FX_RATES: 'fx_rates',
-    TEMPLATES: 'templates',
-    INVOICES: 'invoices',
-    NOTIFICATIONS: 'notifications',
-    PROFILE: 'profile',
-} as const;
-
-export type Resource = (typeof Resources)[keyof typeof Resources];
-
-// Actions that can be performed
-export const Actions = {
-    CREATE: 'create',
-    READ: 'read',
-    UPDATE: 'update',
-    DELETE: 'delete',
-    LIST: 'list',
-} as const;
-
-export type Action = (typeof Actions)[keyof typeof Actions];
-
-// Permission conditions
-export const PermissionConditions = {
-    IsOwner: 'is-owner', // User owns the resource (ownerUserId matches)
-    IsAdmin: 'is-admin', // User is an admin
-} as const;
-
-export type PermissionCondition = (typeof PermissionConditions)[keyof typeof PermissionConditions];
-
-// Permission value can be true (always allowed), false (never allowed), or a condition
-export type PermissionValue = boolean | PermissionCondition | PermissionCondition[];
-
-// Role permission configuration
-interface RolePermissions {
-    [resource: string]: {
-        [action: string]: PermissionValue;
-    };
-}
-
-// Define permissions for each role
-const rolePermissions: Record<UserRole, RolePermissions> = {
-    [UserRoles.ADMIN]: {
-        // Admin has full access to everything
-        '*': { '*': true },
-    },
-    [UserRoles.SHIPPER]: {
-        // Shippers can only access their own resources
-        [Resources.CLIENTS]: {
-            [Actions.CREATE]: true,
-            [Actions.READ]: PermissionConditions.IsOwner,
-            [Actions.UPDATE]: PermissionConditions.IsOwner,
-            [Actions.DELETE]: PermissionConditions.IsOwner,
-            [Actions.LIST]: PermissionConditions.IsOwner,
-        },
-        [Resources.PICKUPS]: {
-            [Actions.CREATE]: true,
-            [Actions.READ]: PermissionConditions.IsOwner,
-            [Actions.UPDATE]: PermissionConditions.IsOwner,
-            [Actions.DELETE]: PermissionConditions.IsOwner,
-            [Actions.LIST]: PermissionConditions.IsOwner,
-        },
-        [Resources.ITEMS]: {
-            [Actions.CREATE]: true,
-            [Actions.READ]: PermissionConditions.IsOwner,
-            [Actions.UPDATE]: PermissionConditions.IsOwner,
-            [Actions.DELETE]: PermissionConditions.IsOwner,
-            [Actions.LIST]: PermissionConditions.IsOwner,
-        },
-        [Resources.BOXES]: {
-            [Actions.CREATE]: true,
-            [Actions.READ]: PermissionConditions.IsOwner,
-            [Actions.UPDATE]: PermissionConditions.IsOwner,
-            [Actions.DELETE]: PermissionConditions.IsOwner,
-            [Actions.LIST]: PermissionConditions.IsOwner,
-        },
-        [Resources.SHIPMENTS]: {
-            [Actions.CREATE]: true,
-            [Actions.READ]: PermissionConditions.IsOwner,
-            [Actions.UPDATE]: PermissionConditions.IsOwner,
-            [Actions.DELETE]: PermissionConditions.IsOwner,
-            [Actions.LIST]: PermissionConditions.IsOwner,
-        },
-        [Resources.PICKUP_REQUESTS]: {
-            [Actions.CREATE]: true,
-            [Actions.READ]: PermissionConditions.IsOwner,
-            [Actions.UPDATE]: PermissionConditions.IsOwner,
-            [Actions.DELETE]: PermissionConditions.IsOwner,
-            [Actions.LIST]: PermissionConditions.IsOwner,
-        },
-        [Resources.FX_RATES]: {
-            [Actions.CREATE]: true,
-            [Actions.READ]: true,
-            [Actions.LIST]: true,
-        },
-        [Resources.TEMPLATES]: {
-            [Actions.CREATE]: true,
-            [Actions.READ]: PermissionConditions.IsOwner,
-            [Actions.UPDATE]: PermissionConditions.IsOwner,
-            [Actions.DELETE]: PermissionConditions.IsOwner,
-            [Actions.LIST]: PermissionConditions.IsOwner,
-        },
-        [Resources.INVOICES]: {
-            [Actions.CREATE]: true,
-            [Actions.READ]: PermissionConditions.IsOwner,
-            [Actions.LIST]: PermissionConditions.IsOwner,
-        },
-        [Resources.NOTIFICATIONS]: {
-            [Actions.READ]: PermissionConditions.IsOwner,
-            [Actions.UPDATE]: PermissionConditions.IsOwner,
-            [Actions.LIST]: PermissionConditions.IsOwner,
-        },
-        [Resources.PROFILE]: {
-            [Actions.CREATE]: true,
-            [Actions.READ]: PermissionConditions.IsOwner,
-            [Actions.UPDATE]: PermissionConditions.IsOwner,
-        },
-    },
-};
+// Re-export for convenience
+export { UserRoles, Resources, Actions, PermissionConditions };
+export type { Resource, Action };
 
 export interface ResourceWithOwner {
     ownerUserId?: string;
     userId?: string;
+    id?: string | number;
 }
+
+// System user for internal operations
+const SYSTEM_USER: User = {
+    id: 'system',
+    name: 'System',
+    email: 'system@internal',
+    emailVerified: true,
+    image: null,
+    role: UserRoles.SYSTEM,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+};
 
 /**
  * UserCan - Permission checking class
  *
- * Checks if a user can perform an action on a resource
+ * Checks if a user can perform an action on a resource.
+ * Does NOT default to any role - requires explicit user or system context.
  */
 export class UserCan {
     private user: User | null;
-    private userRole: UserRole;
+    private userRole: string | null;
 
     constructor(user: User | null) {
         this.user = user;
-        this.userRole = (user?.role as UserRole) ?? UserRoles.SHIPPER;
+        this.userRole = user?.role ?? null;
+    }
+
+    /**
+     * Create a UserCan instance with system privileges
+     * Use this for background jobs, seeding, migrations, etc.
+     */
+    static asSystem(): UserCan {
+        return new UserCan(SYSTEM_USER);
     }
 
     /**
@@ -161,26 +65,24 @@ export class UserCan {
         resource: Resource,
         resourceInstance?: ResourceWithOwner
     ): boolean {
-        if (!this.user) {
+        // No user = no permissions
+        if (!this.user || !this.userRole) {
             return false;
         }
 
-        const permissions = rolePermissions[this.userRole];
-        if (!permissions) {
-            return false;
+        // Check for full access roles (admin, system)
+        if (hasFullAccess(this.userRole)) {
+            return true;
         }
 
-        // Check for wildcard permissions first (admin)
-        const wildcardPerms = permissions['*'];
-        if (wildcardPerms) {
-            const wildcardAction = wildcardPerms['*'];
-            if (wildcardAction === true) {
-                return true;
-            }
+        // Get permissions for this role
+        const config = rolePermissions[this.userRole];
+        if (!config) {
+            return false;
         }
 
         // Check specific resource permissions
-        const resourcePerms = permissions[resource];
+        const resourcePerms = config.permissions[resource];
         if (!resourcePerms) {
             return false;
         }
@@ -190,7 +92,7 @@ export class UserCan {
             return false;
         }
 
-        return this.evaluatePermission(actionPerm, resourceInstance);
+        return this.evaluatePermission(actionPerm as PermissionValue, resourceInstance);
     }
 
     /**
@@ -229,6 +131,13 @@ export class UserCan {
     }
 
     /**
+     * Get the user
+     */
+    public getUser(): User | null {
+        return this.user;
+    }
+
+    /**
      * Get the user ID for ownership checks
      */
     public getUserId(): string | null {
@@ -240,6 +149,34 @@ export class UserCan {
      */
     public isAdmin(): boolean {
         return this.userRole === UserRoles.ADMIN;
+    }
+
+    /**
+     * Check if user is a shipper
+     */
+    public isShipper(): boolean {
+        return this.userRole === UserRoles.SHIPPER;
+    }
+
+    /**
+     * Check if user is a client
+     */
+    public isClient(): boolean {
+        return this.userRole === UserRoles.CLIENT;
+    }
+
+    /**
+     * Check if this is a system user
+     */
+    public isSystem(): boolean {
+        return this.userRole === UserRoles.SYSTEM;
+    }
+
+    /**
+     * Check if user has any valid role (is authenticated)
+     */
+    public isAuthenticated(): boolean {
+        return this.user !== null && this.userRole !== null;
     }
 
     /**
@@ -256,13 +193,13 @@ export class UserCan {
 
         // Single condition
         if (typeof permission === 'string') {
-            return this.evaluateCondition(permission, resourceInstance);
+            return this.evaluateCondition(permission as PermissionCondition, resourceInstance);
         }
 
         // Array of conditions (any must match)
         if (Array.isArray(permission)) {
             return permission.some(condition =>
-                this.evaluateCondition(condition, resourceInstance)
+                this.evaluateCondition(condition as PermissionCondition, resourceInstance)
             );
         }
 
@@ -279,6 +216,18 @@ export class UserCan {
         switch (condition) {
             case PermissionConditions.IsAdmin:
                 return this.isAdmin();
+
+            case PermissionConditions.IsSystem:
+                return this.isSystem();
+
+            case PermissionConditions.IsSelf:
+                if (!resourceInstance) {
+                    // If no resource instance, allow (will be filtered in query)
+                    return true;
+                }
+                // Check if the resource ID matches the user ID (for user records)
+                const resourceUserId = resourceInstance.userId ?? resourceInstance.id;
+                return resourceUserId === this.user?.id;
 
             case PermissionConditions.IsOwner:
                 if (!resourceInstance) {

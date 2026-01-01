@@ -1,0 +1,31 @@
+meta {
+  name: Update Profile
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/v1/auth/profile
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+body:json {
+  {
+    "businessName": "Updated Business Name",
+    "city": "Abuja"
+  }
+}
+
+docs {
+  Update the current user's shipper profile.
+
+  All fields are optional - only include fields you want to update.
+  Pass null to clear a field.
+
+  Returns 404 if user has not completed onboarding.
+}

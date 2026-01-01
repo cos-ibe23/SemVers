@@ -1,7 +1,6 @@
 import { pgTable, serial, text, integer, decimal, date, timestamp, pgEnum } from 'drizzle-orm/pg-core';
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { user } from './auth';
-import { clients } from './clients';
 
 export const pickupStatusEnum = pgEnum('pickup_status', ['DRAFT', 'CONFIRMED', 'CANCELLED']);
 
@@ -10,9 +9,9 @@ export const pickups = pgTable('pickups', {
     ownerUserId: text('owner_user_id')
         .notNull()
         .references(() => user.id, { onDelete: 'cascade' }),
-    clientId: integer('client_id')
+    clientUserId: text('client_user_id')
         .notNull()
-        .references(() => clients.id, { onDelete: 'cascade' }),
+        .references(() => user.id, { onDelete: 'cascade' }),
     pickupFeeUsd: decimal('pickup_fee_usd', { precision: 10, scale: 2 }).default('0'),
     itemPriceUsd: decimal('item_price_usd', { precision: 10, scale: 2 }).default('0'),
     notes: text('notes'),

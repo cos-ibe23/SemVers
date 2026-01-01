@@ -1,0 +1,36 @@
+meta {
+  name: Update Shipper Client
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/v1/shipper-clients/client-001
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+body:json {
+  {
+    "nickname": "Updated Nickname",
+    "phone": "+9876543210"
+  }
+}
+
+docs {
+  Update a shipper-client relationship.
+
+  The clientId in the URL is the user's ID (string).
+
+  All fields are optional - only include fields you want to update.
+  Pass null to clear a field.
+
+  Note: This updates the shipper-client relationship (nickname, phone),
+  not the underlying user data.
+
+  Returns 404 if client not found or not linked to current shipper.
+}

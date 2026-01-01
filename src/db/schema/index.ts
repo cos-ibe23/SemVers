@@ -3,7 +3,7 @@ export * from './auth';
 
 // Application tables
 export * from './shipper-profiles';
-export * from './clients';
+export * from './shipper-clients';
 export * from './fx-rates';
 export * from './pickups';
 export * from './items';

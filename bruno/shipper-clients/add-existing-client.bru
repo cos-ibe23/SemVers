@@ -1,0 +1,36 @@
+meta {
+  name: Add Existing Client
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/v1/shipper-clients/add
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+body:json {
+  {
+    "clientId": "client-001",
+    "nickname": "Johnny",
+    "phone": "+1234567890"
+  }
+}
+
+docs {
+  Link an existing user (with CLIENT role) to the authenticated shipper.
+
+  Required fields:
+  - clientId: The user ID of the client to add
+
+  Optional fields:
+  - nickname: Shipper-specific alias for this client
+  - phone: Contact phone for this shipper-client relationship
+
+  Returns 400 if user is not a CLIENT or already linked to this shipper.
+}

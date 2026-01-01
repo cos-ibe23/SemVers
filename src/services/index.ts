@@ -1,2 +1,2 @@
 export { Service, type ServiceOptions } from './service';
-export { ClientService } from './client-service';
+export { ShipperClientService, type ShipperClientWithUser } from './shipper-client-service';

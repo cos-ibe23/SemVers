@@ -1,0 +1,36 @@
+meta {
+  name: Create and Add Client
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/shipper-clients
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+body:json {
+  {
+    "name": "New Client",
+    "email": "newclient@example.com",
+    "nickname": "NC",
+    "phone": "+1234567890"
+  }
+}
+
+docs {
+  Create a new user with CLIENT role and link them to the authenticated shipper.
+
+  Required fields:
+  - name: Client's name
+  - email: Client's email (must be unique)
+
+  Optional fields:
+  - nickname: Shipper-specific alias for this client
+  - phone: Contact phone for this shipper-client relationship
+}

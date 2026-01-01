@@ -34,11 +34,11 @@ describe('UserCan', () => {
         it('should deny all permissions', () => {
             const userCan = new UserCan(null);
 
-            expect(userCan.canCreate(Resources.CLIENTS)).toBe(false);
-            expect(userCan.canRead(Resources.CLIENTS)).toBe(false);
-            expect(userCan.canUpdate(Resources.CLIENTS)).toBe(false);
-            expect(userCan.canDelete(Resources.CLIENTS)).toBe(false);
-            expect(userCan.canList(Resources.CLIENTS)).toBe(false);
+            expect(userCan.canCreate(Resources.SHIPPER_CLIENTS)).toBe(false);
+            expect(userCan.canRead(Resources.SHIPPER_CLIENTS)).toBe(false);
+            expect(userCan.canUpdate(Resources.SHIPPER_CLIENTS)).toBe(false);
+            expect(userCan.canDelete(Resources.SHIPPER_CLIENTS)).toBe(false);
+            expect(userCan.canList(Resources.SHIPPER_CLIENTS)).toBe(false);
         });
 
         it('should return null for getUserId', () => {
@@ -56,11 +56,11 @@ describe('UserCan', () => {
         it('should allow all permissions', () => {
             const userCan = new UserCan(adminUser);
 
-            expect(userCan.canCreate(Resources.CLIENTS)).toBe(true);
-            expect(userCan.canRead(Resources.CLIENTS)).toBe(true);
-            expect(userCan.canUpdate(Resources.CLIENTS)).toBe(true);
-            expect(userCan.canDelete(Resources.CLIENTS)).toBe(true);
-            expect(userCan.canList(Resources.CLIENTS)).toBe(true);
+            expect(userCan.canCreate(Resources.SHIPPER_CLIENTS)).toBe(true);
+            expect(userCan.canRead(Resources.SHIPPER_CLIENTS)).toBe(true);
+            expect(userCan.canUpdate(Resources.SHIPPER_CLIENTS)).toBe(true);
+            expect(userCan.canDelete(Resources.SHIPPER_CLIENTS)).toBe(true);
+            expect(userCan.canList(Resources.SHIPPER_CLIENTS)).toBe(true);
         });
 
         it('should be admin', () => {
@@ -82,54 +82,54 @@ describe('UserCan', () => {
     describe('with shipper user', () => {
         it('should allow creating clients', () => {
             const userCan = new UserCan(shipperUser);
-            expect(userCan.canCreate(Resources.CLIENTS)).toBe(true);
+            expect(userCan.canCreate(Resources.SHIPPER_CLIENTS)).toBe(true);
         });
 
         it('should allow listing own clients', () => {
             const userCan = new UserCan(shipperUser);
-            expect(userCan.canList(Resources.CLIENTS)).toBe(true);
+            expect(userCan.canList(Resources.SHIPPER_CLIENTS)).toBe(true);
         });
 
         it('should allow reading own client', () => {
             const userCan = new UserCan(shipperUser);
             const ownClient = { ownerUserId: shipperUser.id };
 
-            expect(userCan.canRead(Resources.CLIENTS, ownClient)).toBe(true);
+            expect(userCan.canRead(Resources.SHIPPER_CLIENTS, ownClient)).toBe(true);
         });
 
         it('should deny reading another user client', () => {
             const userCan = new UserCan(shipperUser);
             const otherClient = { ownerUserId: 'other-user-id' };
 
-            expect(userCan.canRead(Resources.CLIENTS, otherClient)).toBe(false);
+            expect(userCan.canRead(Resources.SHIPPER_CLIENTS, otherClient)).toBe(false);
         });
 
         it('should allow updating own client', () => {
             const userCan = new UserCan(shipperUser);
             const ownClient = { ownerUserId: shipperUser.id };
 
-            expect(userCan.canUpdate(Resources.CLIENTS, ownClient)).toBe(true);
+            expect(userCan.canUpdate(Resources.SHIPPER_CLIENTS, ownClient)).toBe(true);
         });
 
         it('should deny updating another user client', () => {
             const userCan = new UserCan(shipperUser);
             const otherClient = { ownerUserId: 'other-user-id' };
 
-            expect(userCan.canUpdate(Resources.CLIENTS, otherClient)).toBe(false);
+            expect(userCan.canUpdate(Resources.SHIPPER_CLIENTS, otherClient)).toBe(false);
         });
 
         it('should allow deleting own client', () => {
             const userCan = new UserCan(shipperUser);
             const ownClient = { ownerUserId: shipperUser.id };
 
-            expect(userCan.canDelete(Resources.CLIENTS, ownClient)).toBe(true);
+            expect(userCan.canDelete(Resources.SHIPPER_CLIENTS, ownClient)).toBe(true);
         });
 
         it('should deny deleting another user client', () => {
             const userCan = new UserCan(shipperUser);
             const otherClient = { ownerUserId: 'other-user-id' };
 
-            expect(userCan.canDelete(Resources.CLIENTS, otherClient)).toBe(false);
+            expect(userCan.canDelete(Resources.SHIPPER_CLIENTS, otherClient)).toBe(false);
         });
 
         it('should return user ID', () => {

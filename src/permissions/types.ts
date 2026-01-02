@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-// User roles for the Imbod platform
+// User roles for the `user` table (Better Auth managed)
 export const UserRoles = {
     ADMIN: 'ADMIN',
     SHIPPER: 'SHIPPER',
@@ -9,6 +9,14 @@ export const UserRoles = {
 } as const;
 
 export type UserRole = (typeof UserRoles)[keyof typeof UserRoles];
+
+// Zod schema for user roles
+export const userRoleSchema = z.enum([
+    UserRoles.ADMIN,
+    UserRoles.SHIPPER,
+    UserRoles.CLIENT,
+    UserRoles.SYSTEM,
+]);
 
 // Resources that can be accessed
 export const Resources = {

@@ -2,7 +2,7 @@ import { createRoute, z } from '@hono/zod-openapi';
 import { authenticated } from '../../../middlewares';
 import { jsonContent, jsonApiErrorContent } from '../../../lib/openapi/helpers';
 
-// User schema for responses
+// User schema for responses (includes business fields)
 const userSchema = z.object({
     id: z.string(),
     name: z.string(),
@@ -12,20 +12,6 @@ const userSchema = z.object({
     role: z.string(),
     createdAt: z.string(),
     updatedAt: z.string(),
-});
-
-// Session schema
-const sessionSchema = z.object({
-    id: z.string(),
-    userId: z.string(),
-    expiresAt: z.string(),
-});
-
-// Profile schema (includes shipper profile data)
-const profileSchema = z.object({
-    id: z.number(),
-    userId: z.string(),
-    role: z.string().nullable(),
     businessName: z.string().nullable(),
     logoUrl: z.string().nullable(),
     street: z.string().nullable(),
@@ -36,12 +22,17 @@ const profileSchema = z.object({
     phoneNumber: z.string().nullable(),
     requestSlug: z.string().nullable(),
     onboardedAt: z.string().nullable(),
-    createdAt: z.string(),
 });
 
-// Onboarding request schema
+// Session schema
+const sessionSchema = z.object({
+    id: z.string(),
+    userId: z.string(),
+    expiresAt: z.string(),
+});
+
+// Onboarding request schema (shippers only)
 const onboardRequestSchema = z.object({
-    role: z.enum(['SHIPPER', 'BUSINESS_OWNER']).default('SHIPPER'),
     businessName: z.string().min(1).max(255),
     logoUrl: z.string().url().max(512).optional(),
     street: z.string().max(255).optional(),
@@ -52,7 +43,7 @@ const onboardRequestSchema = z.object({
     phoneNumber: z.string().max(20).optional(),
 });
 
-// Update profile request schema
+// Update profile request schema (any user)
 const updateProfileRequestSchema = z.object({
     businessName: z.string().min(1).max(255).optional(),
     logoUrl: z.string().url().max(512).optional().nullable(),
@@ -64,7 +55,7 @@ const updateProfileRequestSchema = z.object({
     phoneNumber: z.string().max(20).optional().nullable(),
 });
 
-// GET /v1/auth/me - Get current user with profile
+// GET /v1/auth/me - Get current user with session
 export const getMe = createRoute({
     middleware: [authenticated],
     tags: ['v1-auth'],
@@ -75,44 +66,30 @@ export const getMe = createRoute({
             z.object({
                 user: userSchema,
                 session: sessionSchema,
-                profile: profileSchema.nullable(),
             }),
-            'Current user with profile'
+            'Current user with session'
         ),
         401: jsonApiErrorContent('Not authenticated'),
     },
 });
 
-// GET /v1/auth/profile - Get shipper profile
-export const getProfile = createRoute({
-    middleware: [authenticated],
-    tags: ['v1-auth'],
-    method: 'get',
-    path: '/auth/profile',
-    responses: {
-        200: jsonContent(profileSchema, 'Shipper profile'),
-        401: jsonApiErrorContent('Not authenticated'),
-        404: jsonApiErrorContent('Profile not found - complete onboarding first'),
-    },
-});
-
-// POST /v1/auth/profile/onboard - Complete onboarding
-export const onboardProfile = createRoute({
+// POST /v1/auth/onboard - Complete shipper onboarding
+export const onboard = createRoute({
     middleware: [authenticated],
     tags: ['v1-auth'],
     method: 'post',
-    path: '/auth/profile/onboard',
+    path: '/auth/onboard',
     request: {
         body: jsonContent(onboardRequestSchema, 'Onboarding data'),
     },
     responses: {
-        201: jsonContent(profileSchema, 'Profile created'),
-        400: jsonApiErrorContent('User already onboarded'),
+        200: jsonContent(userSchema, 'User with business fields set'),
+        400: jsonApiErrorContent('Already onboarded or not a shipper'),
         401: jsonApiErrorContent('Not authenticated'),
     },
 });
 
-// PATCH /v1/auth/profile - Update profile
+// PATCH /v1/auth/profile - Update user profile/business fields
 export const updateProfile = createRoute({
     middleware: [authenticated],
     tags: ['v1-auth'],
@@ -122,13 +99,12 @@ export const updateProfile = createRoute({
         body: jsonContent(updateProfileRequestSchema, 'Profile update data'),
     },
     responses: {
-        200: jsonContent(profileSchema, 'Updated profile'),
+        200: jsonContent(userSchema, 'Updated user'),
         401: jsonApiErrorContent('Not authenticated'),
-        404: jsonApiErrorContent('Profile not found - complete onboarding first'),
+        404: jsonApiErrorContent('User not found'),
     },
 });
 
 export type GetMeRoute = typeof getMe;
-export type GetProfileRoute = typeof getProfile;
-export type OnboardProfileRoute = typeof onboardProfile;
+export type OnboardRoute = typeof onboard;
 export type UpdateProfileRoute = typeof updateProfile;

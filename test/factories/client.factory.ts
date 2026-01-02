@@ -1,66 +1,114 @@
-import type { user } from '../../src/db/schema';
+import { randomUUID } from 'crypto';
+import { user, shipperClients } from '../../src/db/schema';
+import { UserRoles } from '../../src/permissions/types';
+import { getTestDb, type TestDb } from '../helpers';
+
+export type User = typeof user.$inferSelect;
+export type ShipperClient = typeof shipperClients.$inferSelect;
 
 let clientIdCounter = 1;
 
-export type User = typeof user.$inferSelect;
-
-export interface CreateClientOptions {
+export interface CreateClientUserOptions {
     id?: string;
     name?: string;
     email?: string;
     image?: string | null;
 }
 
+export interface CreateShipperClientOptions {
+    shipperId: string;
+    clientId: string;
+    nickname?: string | null;
+    phone?: string | null;
+}
+
 /**
- * Factory for creating test client users
- * Clients are users with role = 'CLIENT'
+ * Factory for creating test client users and shipper-client relationships
  */
 export class ClientFactory {
-    private clients: User[] = [];
+    private db: TestDb;
+
+    constructor(db?: TestDb) {
+        this.db = db ?? getTestDb();
+    }
 
     /**
-     * Create a test client user
+     * Create a client user in the database
      */
-    create(options: CreateClientOptions = {}): User {
+    async createUser(options: CreateClientUserOptions = {}): Promise<User> {
         const counter = clientIdCounter++;
-        const id = options.id ?? `client-${counter}`;
-        const client: User = {
-            id,
-            name: options.name ?? `Test Client ${counter}`,
-            email: options.email ?? `client${counter}@example.com`,
-            emailVerified: false,
-            image: options.image ?? null,
-            role: 'CLIENT',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-        };
+        // Use UUID to avoid collisions in parallel tests
+        const uniqueId = randomUUID().slice(0, 8);
+        const id = options.id ?? `client-${uniqueId}`;
 
-        this.clients.push(client);
-        return client;
+        const [created] = await this.db
+            .insert(user)
+            .values({
+                id,
+                name: options.name ?? `Test Client ${counter}`,
+                email: options.email ?? `client-${uniqueId}@example.com`,
+                emailVerified: false,
+                image: options.image ?? null,
+                role: UserRoles.CLIENT,
+            })
+            .returning();
+
+        return created;
     }
 
     /**
-     * Create multiple clients
+     * Create a shipper-client relationship in the database
      */
-    createMany(count: number): User[] {
-        return Array.from({ length: count }, () => this.create());
+    async createRelationship(options: CreateShipperClientOptions): Promise<ShipperClient> {
+        const [created] = await this.db
+            .insert(shipperClients)
+            .values({
+                shipperId: options.shipperId,
+                clientId: options.clientId,
+                nickname: options.nickname ?? null,
+                phone: options.phone ?? null,
+            })
+            .returning();
+
+        return created;
     }
 
     /**
-     * Get all created clients
+     * Create a client user and link to shipper in one call
      */
-    getAll(): User[] {
-        return [...this.clients];
+    async createForShipper(
+        shipperId: string,
+        options: CreateClientUserOptions & { nickname?: string | null; phone?: string | null } = {}
+    ): Promise<{ user: User; relationship: ShipperClient }> {
+        const clientUser = await this.createUser(options);
+        const relationship = await this.createRelationship({
+            shipperId,
+            clientId: clientUser.id,
+            nickname: options.nickname,
+            phone: options.phone,
+        });
+
+        return { user: clientUser, relationship };
     }
 
     /**
-     * Clear all created clients
+     * Reset the counter
      */
-    clear(): void {
-        this.clients = [];
+    static resetCounter(): void {
         clientIdCounter = 1;
     }
 }
 
-// Singleton instance for convenience
-export const clientFactory = new ClientFactory();
+/**
+ * Create a client factory instance
+ */
+export function createClientFactory(db?: TestDb): ClientFactory {
+    return new ClientFactory(db);
+}
+
+// Legacy singleton (deprecated - for backwards compatibility)
+export const clientFactory = {
+    clear: () => {
+        clientIdCounter = 1;
+    },
+};

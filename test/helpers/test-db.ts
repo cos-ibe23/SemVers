@@ -5,10 +5,12 @@ import * as schema from '../../src/db/schema';
 let testClient: ReturnType<typeof postgres> | null = null;
 let testDb: ReturnType<typeof drizzle<typeof schema>> | null = null;
 
+export type TestDb = ReturnType<typeof drizzle<typeof schema>>;
+
 /**
  * Get or create the test database connection
  */
-export function getTestDb() {
+export function getTestDb(): TestDb {
     if (!testDb) {
         const databaseUrl = process.env.DATABASE_URL;
         if (!databaseUrl) {
@@ -37,19 +39,50 @@ export async function closeTestDb() {
 /**
  * Clean all tables in the test database
  * Call this between tests to ensure isolation
+ * Deletes in reverse dependency order to respect foreign key constraints
  */
 export async function cleanTestDb() {
     const db = getTestDb();
 
-    // Delete in order to respect foreign key constraints
-    // Start with junction/child tables, then parent tables
+    // Delete in reverse dependency order
+    // Child/junction tables first, then parent tables
+
+    // Notification tables
+    await db.delete(schema.notifications);
+    await db.delete(schema.notificationSettings);
+
+    // Invoice tables
+    await db.delete(schema.invoices);
+
+    // Pickup-related tables
+    await db.delete(schema.pickupCodes);
+    await db.delete(schema.items);
+    await db.delete(schema.pickups);
+    await db.delete(schema.pickupTemplates);
+
+    // Pickup request tables
+    await db.delete(schema.paymentProofs);
+    await db.delete(schema.pickupRequestItems);
+    await db.delete(schema.pickupRequests);
+
+    // Shipment tables
+    await db.delete(schema.boxShipments);
+    await db.delete(schema.shipments);
+    await db.delete(schema.boxes);
+
+    // Other tables
+    await db.delete(schema.imeiScans);
+    await db.delete(schema.fxRates);
+    await db.delete(schema.shipperPaymentMethods);
+
+    // Shipper-client relationship
     await db.delete(schema.shipperClients);
-    await db.delete(schema.shipperProfiles);
-    // Better Auth tables are managed separately, but we can clean them too
-    // await db.delete(schema.session);
-    // await db.delete(schema.account);
-    // await db.delete(schema.verification);
-    // await db.delete(schema.user);
+
+    // Better Auth tables (user is parent of many)
+    await db.delete(schema.session);
+    await db.delete(schema.account);
+    await db.delete(schema.verification);
+    await db.delete(schema.user);
 }
 
 /**
@@ -58,29 +91,17 @@ export async function cleanTestDb() {
 export async function waitForTestDatabase(maxRetries = 30, retryDelay = 1000): Promise<void> {
     let retries = 0;
 
-    console.log(`🔍 Testing database connection...`);
-
     while (retries < maxRetries) {
         try {
             const db = getTestDb();
-            // Test the connection with a simple query
             await db.execute('SELECT 1');
-            console.log('✅ Test database is ready');
             return;
-        }
-        catch (error) {
+        } catch {
             retries++;
-            console.log(`⏳ Waiting for database... (attempt ${retries}/${maxRetries})`);
-
             if (retries >= maxRetries) {
-                console.error(`❌ Database connection failed after ${maxRetries} attempts`);
-                throw new Error(
-                    `Database connection failed after ${maxRetries} attempts. ` +
-                    `Last error: ${error instanceof Error ? error.message : String(error)}`
-                );
+                throw new Error(`Database connection failed after ${maxRetries} attempts`);
             }
-
-            await new Promise(resolve => setTimeout(resolve, retryDelay));
+            await new Promise((resolve) => setTimeout(resolve, retryDelay));
         }
     }
 }

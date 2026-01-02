@@ -1,11 +1,11 @@
 import { eq } from 'drizzle-orm';
 import slugify from 'slugify';
-import { shipperProfiles, shipperProfileResponseSchema, type ShipperProfileResponse } from '../db/schema';
+import { user, userResponseSchema, type UserResponse } from '../db/schema';
 import { ApiError, NotFoundError, BadRequestError } from '../lib/errors';
+import { UserRoles } from '../permissions/types';
 import { Service, type ServiceOptions } from './service';
 
-export interface OnboardProfileInput {
-    role: 'SHIPPER' | 'BUSINESS_OWNER';
+export interface OnboardInput {
     businessName: string;
     logoUrl?: string | null;
     street?: string | null;
@@ -32,64 +32,90 @@ export class AuthService extends Service {
         super(options);
     }
 
-    public async getProfile(): Promise<ShipperProfileResponse | null> {
+    /**
+     * Get the current user with all profile/business fields
+     */
+    public async getUser(): Promise<UserResponse | null> {
         try {
             const userId = this.requireUserId();
 
-            const profiles = await this.db
+            const users = await this.db
                 .select()
-                .from(shipperProfiles)
-                .where(eq(shipperProfiles.userId, userId))
+                .from(user)
+                .where(eq(user.id, userId))
                 .limit(1);
 
-            const profile = profiles[0];
-            if (!profile) {
+            const foundUser = users[0];
+            if (!foundUser) {
                 return null;
             }
 
-            return shipperProfileResponseSchema.parse(profile);
+            return userResponseSchema.parse(foundUser);
         } catch (error) {
             const apiError = ApiError.parse(error);
-            apiError.log({ method: 'AuthService.getProfile' });
+            apiError.log({ method: 'AuthService.getUser' });
             throw apiError;
         }
     }
 
-    public async getProfileOrThrow(): Promise<ShipperProfileResponse> {
+    /**
+     * Get the current user or throw if not found
+     */
+    public async getUserOrThrow(): Promise<UserResponse> {
         try {
-            const profile = await this.getProfile();
-            if (!profile) {
-                throw new NotFoundError('Profile not found - complete onboarding first');
+            const foundUser = await this.getUser();
+            if (!foundUser) {
+                throw new NotFoundError('User not found');
             }
-            return profile;
+            return foundUser;
         } catch (error) {
             const apiError = ApiError.parse(error);
-            apiError.log({ method: 'AuthService.getProfileOrThrow' });
+            apiError.log({ method: 'AuthService.getUserOrThrow' });
             throw apiError;
         }
     }
 
-    public async createProfile(input: OnboardProfileInput): Promise<ShipperProfileResponse> {
+    /**
+     * Check if shipper has completed onboarding
+     */
+    public async isOnboarded(): Promise<boolean> {
+        const foundUser = await this.getUser();
+        return foundUser?.onboardedAt !== null;
+    }
+
+    /**
+     * Complete shipper onboarding by setting business fields
+     * Only shippers can onboard (get requestSlug)
+     */
+    public async onboard(input: OnboardInput): Promise<UserResponse> {
         try {
             const userId = this.requireUserId();
 
-            const existing = await this.db
-                .select({ id: shipperProfiles.id })
-                .from(shipperProfiles)
-                .where(eq(shipperProfiles.userId, userId))
+            // Check if user is a shipper
+            const existingUsers = await this.db
+                .select()
+                .from(user)
+                .where(eq(user.id, userId))
                 .limit(1);
 
-            if (existing.length > 0) {
+            const existingUser = existingUsers[0];
+            if (!existingUser) {
+                throw new NotFoundError('User not found');
+            }
+
+            if (existingUser.role !== UserRoles.SHIPPER) {
+                throw new BadRequestError('Only shippers can complete onboarding');
+            }
+
+            if (existingUser.onboardedAt) {
                 throw new BadRequestError('User already onboarded');
             }
 
             const requestSlug = await this.generateUniqueSlug(input.businessName);
 
-            const [profile] = await this.db
-                .insert(shipperProfiles)
-                .values({
-                    userId,
-                    role: input.role,
+            const [updatedUser] = await this.db
+                .update(user)
+                .set({
                     businessName: input.businessName,
                     logoUrl: input.logoUrl ?? null,
                     street: input.street ?? null,
@@ -100,51 +126,58 @@ export class AuthService extends Service {
                     phoneNumber: input.phoneNumber ?? null,
                     requestSlug,
                     onboardedAt: new Date(),
+                    updatedAt: new Date(),
                 })
+                .where(eq(user.id, userId))
                 .returning();
 
-            this.log('profile_created', { profileId: profile.id });
+            this.log('shipper_onboarded', { userId: updatedUser.id });
 
-            return shipperProfileResponseSchema.parse(profile);
+            return userResponseSchema.parse(updatedUser);
         } catch (error) {
             const apiError = ApiError.parse(error);
-            apiError.log({ method: 'AuthService.createProfile' });
+            apiError.log({ method: 'AuthService.onboard' });
             throw apiError;
         }
     }
 
-    public async updateProfile(input: UpdateProfileInput): Promise<ShipperProfileResponse> {
+    /**
+     * Update user profile/business fields
+     */
+    public async updateProfile(input: UpdateProfileInput): Promise<UserResponse> {
         try {
             const userId = this.requireUserId();
 
-            const existing = await this.db
+            const existingUsers = await this.db
                 .select()
-                .from(shipperProfiles)
-                .where(eq(shipperProfiles.userId, userId))
+                .from(user)
+                .where(eq(user.id, userId))
                 .limit(1);
 
-            if (existing.length === 0) {
-                throw new NotFoundError('Profile not found - complete onboarding first');
+            const existingUser = existingUsers[0];
+            if (!existingUser) {
+                throw new NotFoundError('User not found');
             }
 
-            const [profile] = await this.db
-                .update(shipperProfiles)
+            const [updatedUser] = await this.db
+                .update(user)
                 .set({
-                    businessName: input.businessName ?? existing[0].businessName,
-                    logoUrl: input.logoUrl !== undefined ? input.logoUrl : existing[0].logoUrl,
-                    street: input.street !== undefined ? input.street : existing[0].street,
-                    city: input.city !== undefined ? input.city : existing[0].city,
-                    state: input.state !== undefined ? input.state : existing[0].state,
-                    country: input.country !== undefined ? input.country : existing[0].country,
-                    phoneCountryCode: input.phoneCountryCode !== undefined ? input.phoneCountryCode : existing[0].phoneCountryCode,
-                    phoneNumber: input.phoneNumber !== undefined ? input.phoneNumber : existing[0].phoneNumber,
+                    businessName: input.businessName ?? existingUser.businessName,
+                    logoUrl: input.logoUrl !== undefined ? input.logoUrl : existingUser.logoUrl,
+                    street: input.street !== undefined ? input.street : existingUser.street,
+                    city: input.city !== undefined ? input.city : existingUser.city,
+                    state: input.state !== undefined ? input.state : existingUser.state,
+                    country: input.country !== undefined ? input.country : existingUser.country,
+                    phoneCountryCode: input.phoneCountryCode !== undefined ? input.phoneCountryCode : existingUser.phoneCountryCode,
+                    phoneNumber: input.phoneNumber !== undefined ? input.phoneNumber : existingUser.phoneNumber,
+                    updatedAt: new Date(),
                 })
-                .where(eq(shipperProfiles.userId, userId))
+                .where(eq(user.id, userId))
                 .returning();
 
-            this.log('profile_updated', { profileId: profile.id });
+            this.log('profile_updated', { userId: updatedUser.id });
 
-            return shipperProfileResponseSchema.parse(profile);
+            return userResponseSchema.parse(updatedUser);
         } catch (error) {
             const apiError = ApiError.parse(error);
             apiError.log({ method: 'AuthService.updateProfile' });
@@ -159,9 +192,9 @@ export class AuthService extends Service {
 
         while (true) {
             const existing = await this.db
-                .select({ id: shipperProfiles.id })
-                .from(shipperProfiles)
-                .where(eq(shipperProfiles.requestSlug, slug))
+                .select({ id: user.id })
+                .from(user)
+                .where(eq(user.requestSlug, slug))
                 .limit(1);
 
             if (existing.length === 0) {

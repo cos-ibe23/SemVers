@@ -2,6 +2,7 @@ import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { db } from './index';
 import { env } from '../env';
+import { UserRoles } from '../permissions/types';
 
 export const auth = betterAuth({
     database: drizzleAdapter(db, {
@@ -45,7 +46,7 @@ export const auth = betterAuth({
         additionalFields: {
             role: {
                 type: 'string',
-                defaultValue: 'SHIPPER',
+                defaultValue: UserRoles.SHIPPER,
                 input: false, // Cannot be set by user during signup
             },
         },

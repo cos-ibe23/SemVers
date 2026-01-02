@@ -1,13 +1,24 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { createTestApp, mockAuthMiddleware } from '@test/helpers';
-import { userFactory } from '@test/factories';
+import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { createTestApp, mockAuthMiddleware, getTestDb, cleanTestDb, closeTestDb } from '@test/helpers';
+import { createUserFactory, createClientFactory, UserFactory, ClientFactory } from '@test/factories';
 import * as routes from './shipper-clients.routes';
 import * as handlers from './shipper-clients.handlers';
 
 describe('Shipper Clients Routes', () => {
-    beforeEach(() => {
-        userFactory.clear();
-        vi.clearAllMocks();
+    const db = getTestDb();
+    let userFactory: UserFactory;
+    let clientFactory: ClientFactory;
+
+    beforeEach(async () => {
+        await cleanTestDb();
+        userFactory = createUserFactory(db);
+        clientFactory = createClientFactory(db);
+        UserFactory.resetCounter();
+        ClientFactory.resetCounter();
+    });
+
+    afterAll(async () => {
+        await closeTestDb();
     });
 
     describe('GET /clients', () => {
@@ -23,6 +34,63 @@ describe('Shipper Clients Routes', () => {
             expect(response.status).toBe(401);
             const body = await response.json();
             expect(body).toHaveProperty('error');
+        });
+
+        it('should return empty list when shipper has no clients', async () => {
+            const shipper = await userFactory.createShipper();
+
+            const app = createTestApp();
+            app.use('*', mockAuthMiddleware(shipper));
+            app.openapi(routes.listClients, handlers.listClients);
+
+            const response = await app.request('/clients', {
+                method: 'GET',
+            });
+
+            expect(response.status).toBe(200);
+            const body = await response.json();
+            expect(body.data).toEqual([]);
+            expect(body.total).toBe(0);
+        });
+
+        it('should return clients for shipper', async () => {
+            const shipper = await userFactory.createShipper();
+            await clientFactory.createForShipper(shipper.id, { name: 'Client A' });
+            await clientFactory.createForShipper(shipper.id, { name: 'Client B' });
+
+            const app = createTestApp();
+            app.use('*', mockAuthMiddleware(shipper));
+            app.openapi(routes.listClients, handlers.listClients);
+
+            const response = await app.request('/clients', {
+                method: 'GET',
+            });
+
+            expect(response.status).toBe(200);
+            const body = await response.json();
+            expect(body.data).toHaveLength(2);
+            expect(body.total).toBe(2);
+        });
+
+        it('should not return other shippers clients', async () => {
+            const shipper1 = await userFactory.createShipper({ email: 'shipper1@test.com' });
+            const shipper2 = await userFactory.createShipper({ email: 'shipper2@test.com' });
+
+            await clientFactory.createForShipper(shipper1.id, { name: 'Shipper 1 Client' });
+            await clientFactory.createForShipper(shipper2.id, { name: 'Shipper 2 Client' });
+
+            const app = createTestApp();
+            app.use('*', mockAuthMiddleware(shipper1));
+            app.openapi(routes.listClients, handlers.listClients);
+
+            const response = await app.request('/clients', {
+                method: 'GET',
+            });
+
+            expect(response.status).toBe(200);
+            const body = await response.json();
+            expect(body.data).toHaveLength(1);
+            expect(body.data[0].client.name).toBe('Shipper 1 Client');
         });
     });
 
@@ -44,10 +112,10 @@ describe('Shipper Clients Routes', () => {
         });
 
         it('should validate request body - requires clientUserId or name+email', async () => {
-            const user = userFactory.createShipper();
+            const shipper = await userFactory.createShipper();
 
             const app = createTestApp();
-            app.use('*', mockAuthMiddleware(user));
+            app.use('*', mockAuthMiddleware(shipper));
             app.openapi(routes.addClient, handlers.addClient);
 
             const response = await app.request('/clients', {
@@ -61,33 +129,35 @@ describe('Shipper Clients Routes', () => {
             expect(body).toHaveProperty('error');
         });
 
-        it('should accept valid request with clientUserId', async () => {
-            const user = userFactory.createShipper();
+        it('should add existing client user to shipper', async () => {
+            const shipper = await userFactory.createShipper();
+            const clientUser = await clientFactory.createUser({ name: 'Existing Client' });
 
             const app = createTestApp();
-            app.use('*', mockAuthMiddleware(user));
+            app.use('*', mockAuthMiddleware(shipper));
             app.openapi(routes.addClient, handlers.addClient);
 
             const response = await app.request('/clients', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    clientUserId: 'client-user-123',
-                    nickname: 'Test Client',
+                    clientUserId: clientUser.id,
+                    nickname: 'My Nickname',
                 }),
             });
 
-            // Will fail at service level (no DB), but validates the route accepts the payload
-            // Status will be 404 (client user not found) or 500 (DB error) - not 401 or 422
-            expect(response.status).not.toBe(401);
-            expect(response.status).not.toBe(422);
+            expect(response.status).toBe(201);
+            const body = await response.json();
+            expect(body.clientId).toBe(clientUser.id);
+            expect(body.nickname).toBe('My Nickname');
+            expect(body.client.name).toBe('Existing Client');
         });
 
-        it('should accept valid request with name and email', async () => {
-            const user = userFactory.createShipper();
+        it('should create new client user and add to shipper', async () => {
+            const shipper = await userFactory.createShipper();
 
             const app = createTestApp();
-            app.use('*', mockAuthMiddleware(user));
+            app.use('*', mockAuthMiddleware(shipper));
             app.openapi(routes.addClient, handlers.addClient);
 
             const response = await app.request('/clients', {
@@ -96,12 +166,36 @@ describe('Shipper Clients Routes', () => {
                 body: JSON.stringify({
                     name: 'New Client',
                     email: 'newclient@example.com',
+                    nickname: 'NC',
                 }),
             });
 
-            // Will fail at service level (no DB), but validates the route accepts the payload
-            expect(response.status).not.toBe(401);
-            expect(response.status).not.toBe(422);
+            expect(response.status).toBe(201);
+            const body = await response.json();
+            expect(body.client.name).toBe('New Client');
+            expect(body.client.email).toBe('newclient@example.com');
+            expect(body.nickname).toBe('NC');
+        });
+
+        it('should return 400 if client already added', async () => {
+            const shipper = await userFactory.createShipper();
+            const { user: clientUser } = await clientFactory.createForShipper(shipper.id);
+
+            const app = createTestApp();
+            app.use('*', mockAuthMiddleware(shipper));
+            app.openapi(routes.addClient, handlers.addClient);
+
+            const response = await app.request('/clients', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clientUserId: clientUser.id,
+                }),
+            });
+
+            expect(response.status).toBe(400);
+            const body = await response.json();
+            expect(body.error).toContain('already added');
         });
     });
 
@@ -116,6 +210,42 @@ describe('Shipper Clients Routes', () => {
             });
 
             expect(response.status).toBe(401);
+        });
+
+        it('should return 404 for non-existent client', async () => {
+            const shipper = await userFactory.createShipper();
+
+            const app = createTestApp();
+            app.use('*', mockAuthMiddleware(shipper));
+            app.openapi(routes.getClient, handlers.getClient);
+
+            const response = await app.request('/clients/non-existent-id', {
+                method: 'GET',
+            });
+
+            expect(response.status).toBe(404);
+        });
+
+        it('should return client details', async () => {
+            const shipper = await userFactory.createShipper();
+            const { user: clientUser } = await clientFactory.createForShipper(shipper.id, {
+                name: 'My Client',
+                nickname: 'MC',
+            });
+
+            const app = createTestApp();
+            app.use('*', mockAuthMiddleware(shipper));
+            app.openapi(routes.getClient, handlers.getClient);
+
+            const response = await app.request(`/clients/${clientUser.id}`, {
+                method: 'GET',
+            });
+
+            expect(response.status).toBe(200);
+            const body = await response.json();
+            expect(body.clientId).toBe(clientUser.id);
+            expect(body.nickname).toBe('MC');
+            expect(body.client.name).toBe('My Client');
         });
     });
 
@@ -136,25 +266,29 @@ describe('Shipper Clients Routes', () => {
             expect(response.status).toBe(401);
         });
 
-        it('should accept valid update request', async () => {
-            const user = userFactory.createShipper();
+        it('should update client nickname and phone', async () => {
+            const shipper = await userFactory.createShipper();
+            const { user: clientUser } = await clientFactory.createForShipper(shipper.id, {
+                nickname: 'Old Nickname',
+            });
 
             const app = createTestApp();
-            app.use('*', mockAuthMiddleware(user));
+            app.use('*', mockAuthMiddleware(shipper));
             app.openapi(routes.updateClient, handlers.updateClient);
 
-            const response = await app.request('/clients/client-123', {
+            const response = await app.request(`/clients/${clientUser.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    nickname: 'Updated Nickname',
+                    nickname: 'New Nickname',
                     phone: '+1234567890',
                 }),
             });
 
-            // Will fail at service level (no DB), but validates the route accepts the payload
-            expect(response.status).not.toBe(401);
-            expect(response.status).not.toBe(422);
+            expect(response.status).toBe(200);
+            const body = await response.json();
+            expect(body.nickname).toBe('New Nickname');
+            expect(body.phone).toBe('+1234567890');
         });
     });
 
@@ -169,6 +303,29 @@ describe('Shipper Clients Routes', () => {
             });
 
             expect(response.status).toBe(401);
+        });
+
+        it('should soft delete client relationship', async () => {
+            const shipper = await userFactory.createShipper();
+            const { user: clientUser } = await clientFactory.createForShipper(shipper.id);
+
+            const app = createTestApp();
+            app.use('*', mockAuthMiddleware(shipper));
+            app.openapi(routes.removeClient, handlers.removeClient);
+            app.openapi(routes.listClients, handlers.listClients);
+
+            // Delete the client
+            const deleteResponse = await app.request(`/clients/${clientUser.id}`, {
+                method: 'DELETE',
+            });
+            expect(deleteResponse.status).toBe(200);
+
+            // Verify client no longer appears in list
+            const listResponse = await app.request('/clients', {
+                method: 'GET',
+            });
+            const body = await listResponse.json();
+            expect(body.data).toHaveLength(0);
         });
     });
 });

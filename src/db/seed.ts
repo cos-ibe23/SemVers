@@ -6,7 +6,8 @@
  */
 
 import { db, closeDatabase } from './index';
-import { user, session, shipperProfiles, shipperClients, fxRates } from './schema';
+import { user, session, shipperClients, fxRates } from './schema';
+import { UserRoles } from '../permissions/types';
 
 async function seed() {
     console.log('🌱 Starting database seed...\n');
@@ -23,11 +24,11 @@ async function seed() {
                 name: 'Admin User',
                 email: 'admin@imbod.test',
                 emailVerified: true,
-                role: 'ADMIN',
+                role: UserRoles.ADMIN,
             })
             .onConflictDoNothing();
 
-        // Shipper users
+        // Shipper users (with business fields for onboarded shippers)
         await db
             .insert(user)
             .values({
@@ -35,7 +36,16 @@ async function seed() {
                 name: 'Test Shipper',
                 email: 'shipper@imbod.test',
                 emailVerified: true,
-                role: 'SHIPPER',
+                role: UserRoles.SHIPPER,
+                businessName: 'Test Shipping Co',
+                street: '123 Main St',
+                city: 'Lagos',
+                state: 'Lagos',
+                country: 'Nigeria',
+                phoneCountryCode: '+234',
+                phoneNumber: '8012345678',
+                requestSlug: 'test-shipping-co',
+                onboardedAt: new Date(),
             })
             .onConflictDoNothing();
 
@@ -46,7 +56,16 @@ async function seed() {
                 name: 'Jane Shipper',
                 email: 'jane@imbod.test',
                 emailVerified: true,
-                role: 'SHIPPER',
+                role: UserRoles.SHIPPER,
+                businessName: "Jane's Logistics",
+                street: '456 Commerce Ave',
+                city: 'Abuja',
+                state: 'FCT',
+                country: 'Nigeria',
+                phoneCountryCode: '+234',
+                phoneNumber: '9098765432',
+                requestSlug: 'janes-logistics',
+                onboardedAt: new Date(),
             })
             .onConflictDoNothing();
 
@@ -67,51 +86,12 @@ async function seed() {
                 .values({
                     ...client,
                     emailVerified: false,
-                    role: 'CLIENT',
+                    role: UserRoles.CLIENT,
                 })
                 .onConflictDoNothing();
         }
 
         console.log(`  ✓ Created 3 admin/shipper users + ${clientUsers.length} client users`);
-
-        // Create shipper profiles
-        console.log('Creating shipper profiles...');
-
-        await db
-            .insert(shipperProfiles)
-            .values({
-                userId: 'shipper-001',
-                role: 'SHIPPER',
-                businessName: 'Test Shipping Co',
-                street: '123 Main St',
-                city: 'Lagos',
-                state: 'Lagos',
-                country: 'Nigeria',
-                phoneCountryCode: '+234',
-                phoneNumber: '8012345678',
-                requestSlug: 'test-shipping-co',
-                onboardedAt: new Date(),
-            })
-            .onConflictDoNothing();
-
-        await db
-            .insert(shipperProfiles)
-            .values({
-                userId: 'shipper-002',
-                role: 'BUSINESS_OWNER',
-                businessName: "Jane's Logistics",
-                street: '456 Commerce Ave',
-                city: 'Abuja',
-                state: 'FCT',
-                country: 'Nigeria',
-                phoneCountryCode: '+234',
-                phoneNumber: '9098765432',
-                requestSlug: 'janes-logistics',
-                onboardedAt: new Date(),
-            })
-            .onConflictDoNothing();
-
-        console.log('  ✓ Created 2 shipper profiles');
 
         // Create shipper-client relationships
         console.log('Creating shipper-client relationships...');

@@ -1,4 +1,3 @@
-CREATE TYPE "public"."shipper_role" AS ENUM('SHIPPER', 'BUSINESS_OWNER');--> statement-breakpoint
 CREATE TYPE "public"."pickup_status" AS ENUM('DRAFT', 'CONFIRMED', 'CANCELLED');--> statement-breakpoint
 CREATE TYPE "public"."item_status" AS ENUM('PENDING', 'IN_BOX', 'IN_TRANSIT', 'DELIVERED', 'HANDED_OFF', 'SOLD', 'RETURNED');--> statement-breakpoint
 CREATE TYPE "public"."box_status" AS ENUM('OPEN', 'SEALED', 'SHIPPED', 'DELIVERED');--> statement-breakpoint
@@ -42,10 +41,22 @@ CREATE TABLE "user" (
 	"email" text NOT NULL,
 	"email_verified" boolean DEFAULT false NOT NULL,
 	"image" text,
-	"role" text DEFAULT 'SHIPPER' NOT NULL,
+	"role" text DEFAULT 'CLIENT' NOT NULL,
+	"is_system_user" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "user_email_unique" UNIQUE("email")
+	"business_name" varchar(255),
+	"logo_url" varchar(512),
+	"street" varchar(255),
+	"city" varchar(100),
+	"state" varchar(100),
+	"country" varchar(100),
+	"phone_country_code" varchar(10),
+	"phone_number" varchar(20),
+	"request_slug" varchar(100),
+	"onboarded_at" timestamp,
+	CONSTRAINT "user_email_unique" UNIQUE("email"),
+	CONSTRAINT "user_request_slug_unique" UNIQUE("request_slug")
 );
 --> statement-breakpoint
 CREATE TABLE "verification" (
@@ -57,34 +68,14 @@ CREATE TABLE "verification" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE "shipper_profiles" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"user_id" text NOT NULL,
-	"role" "shipper_role" DEFAULT 'SHIPPER',
-	"business_name" varchar(255),
-	"logo_url" varchar(512),
-	"street" varchar(255),
-	"city" varchar(100),
-	"state" varchar(100),
-	"country" varchar(100),
-	"phone_country_code" varchar(10),
-	"phone_number" varchar(20),
-	"request_slug" varchar(100),
-	"onboarded_at" timestamp,
-	"created_at" timestamp DEFAULT now() NOT NULL,
-	CONSTRAINT "shipper_profiles_user_id_unique" UNIQUE("user_id"),
-	CONSTRAINT "shipper_profiles_request_slug_unique" UNIQUE("request_slug")
-);
---> statement-breakpoint
-CREATE TABLE "clients" (
-	"id" serial PRIMARY KEY NOT NULL,
-	"owner_user_id" text NOT NULL,
-	"name" varchar(255) NOT NULL,
-	"email" varchar(255),
+CREATE TABLE "shipper_clients" (
+	"shipper_id" text NOT NULL,
+	"client_id" text NOT NULL,
+	"nickname" varchar(255),
 	"phone" varchar(50),
-	"avatar_url" varchar(512),
 	"deleted_at" timestamp,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "shipper_clients_shipper_id_client_id_pk" PRIMARY KEY("shipper_id","client_id")
 );
 --> statement-breakpoint
 CREATE TABLE "fx_rates" (
@@ -98,7 +89,7 @@ CREATE TABLE "fx_rates" (
 CREATE TABLE "pickups" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"owner_user_id" text NOT NULL,
-	"client_id" integer NOT NULL,
+	"client_user_id" text NOT NULL,
 	"pickup_fee_usd" numeric(10, 2) DEFAULT '0',
 	"item_price_usd" numeric(10, 2) DEFAULT '0',
 	"notes" text,
@@ -208,7 +199,7 @@ CREATE TABLE "shipper_payment_methods" (
 CREATE TABLE "pickup_codes" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"box_id" integer NOT NULL,
-	"client_id" integer NOT NULL,
+	"client_user_id" text NOT NULL,
 	"code" varchar(20) NOT NULL,
 	"used_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL
@@ -226,7 +217,7 @@ CREATE TABLE "imei_scans" (
 CREATE TABLE "invoices" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"owner_user_id" text NOT NULL,
-	"client_id" integer,
+	"client_user_id" text,
 	"pickup_id" integer,
 	"box_id" integer,
 	"type" "invoice_type" NOT NULL,
@@ -290,10 +281,10 @@ CREATE TABLE "notifications" (
 --> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "shipper_profiles" ADD CONSTRAINT "shipper_profiles_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "clients" ADD CONSTRAINT "clients_owner_user_id_user_id_fk" FOREIGN KEY ("owner_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "shipper_clients" ADD CONSTRAINT "shipper_clients_shipper_id_user_id_fk" FOREIGN KEY ("shipper_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "shipper_clients" ADD CONSTRAINT "shipper_clients_client_id_user_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pickups" ADD CONSTRAINT "pickups_owner_user_id_user_id_fk" FOREIGN KEY ("owner_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "pickups" ADD CONSTRAINT "pickups_client_id_clients_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "pickups" ADD CONSTRAINT "pickups_client_user_id_user_id_fk" FOREIGN KEY ("client_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "items" ADD CONSTRAINT "items_pickup_id_pickups_id_fk" FOREIGN KEY ("pickup_id") REFERENCES "public"."pickups"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "items" ADD CONSTRAINT "items_box_id_boxes_id_fk" FOREIGN KEY ("box_id") REFERENCES "public"."boxes"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "items" ADD CONSTRAINT "items_fx_rate_id_fx_rates_id_fk" FOREIGN KEY ("fx_rate_id") REFERENCES "public"."fx_rates"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -308,9 +299,9 @@ ALTER TABLE "payment_proofs" ADD CONSTRAINT "payment_proofs_request_id_pickup_re
 ALTER TABLE "payment_proofs" ADD CONSTRAINT "payment_proofs_verified_by_user_id_user_id_fk" FOREIGN KEY ("verified_by_user_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shipper_payment_methods" ADD CONSTRAINT "shipper_payment_methods_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pickup_codes" ADD CONSTRAINT "pickup_codes_box_id_boxes_id_fk" FOREIGN KEY ("box_id") REFERENCES "public"."boxes"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "pickup_codes" ADD CONSTRAINT "pickup_codes_client_id_clients_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "pickup_codes" ADD CONSTRAINT "pickup_codes_client_user_id_user_id_fk" FOREIGN KEY ("client_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_owner_user_id_user_id_fk" FOREIGN KEY ("owner_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "invoices" ADD CONSTRAINT "invoices_client_id_clients_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "invoices" ADD CONSTRAINT "invoices_client_user_id_user_id_fk" FOREIGN KEY ("client_user_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_pickup_id_pickups_id_fk" FOREIGN KEY ("pickup_id") REFERENCES "public"."pickups"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "invoices" ADD CONSTRAINT "invoices_box_id_boxes_id_fk" FOREIGN KEY ("box_id") REFERENCES "public"."boxes"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pickup_templates" ADD CONSTRAINT "pickup_templates_owner_user_id_user_id_fk" FOREIGN KEY ("owner_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint

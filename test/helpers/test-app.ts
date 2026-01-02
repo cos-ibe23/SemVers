@@ -2,13 +2,26 @@ import { OpenAPIHono } from '@hono/zod-openapi';
 import type { AppBindings } from '../../src/lib/types';
 import type { User } from '../../src/db/auth';
 import { createRequestScope, withRequestScope } from '../../src/lib/request-scope';
+import { ApiError } from '../../src/lib/errors';
 
 /**
- * Create a test app with mocked authentication
+ * Create a test app with mocked authentication and error handling
  */
 export function createTestApp() {
     const app = new OpenAPIHono<AppBindings>({
         strict: false,
+        defaultHook: (result, c) => {
+            if (!result.success) {
+                const error = ApiError.parse(result.error);
+                return c.json(error.toResponseError(), error.statusCode);
+            }
+        },
+    });
+
+    // Global error handler (same as main app)
+    app.onError((err, c) => {
+        const apiError = ApiError.parse(err);
+        return c.json(apiError.toResponseError(), apiError.statusCode);
     });
 
     return app;

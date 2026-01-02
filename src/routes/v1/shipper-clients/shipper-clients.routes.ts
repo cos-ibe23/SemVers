@@ -8,7 +8,6 @@ import {
     searchPaginationQuerySchema,
 } from '../../../lib/openapi/helpers';
 
-// Client user schema (the actual user data)
 const clientUserSchema = z.object({
     id: z.string(),
     name: z.string(),
@@ -16,7 +15,6 @@ const clientUserSchema = z.object({
     image: z.string().nullable(),
 });
 
-// Shipper-client relationship schema
 const shipperClientSchema = z.object({
     shipperId: z.string(),
     clientId: z.string(),
@@ -26,7 +24,6 @@ const shipperClientSchema = z.object({
     client: clientUserSchema,
 });
 
-// GET /v1/clients - List shipper's clients with pagination and search
 export const listClients = createRoute({
     middleware: [authenticated],
     tags: ['v1-clients'],
@@ -41,7 +38,6 @@ export const listClients = createRoute({
     },
 });
 
-// POST /v1/clients - Add existing user as client or create new client user
 export const addClient = createRoute({
     middleware: [authenticated],
     tags: ['v1-clients'],
@@ -50,12 +46,9 @@ export const addClient = createRoute({
     request: {
         body: jsonContentRequired(
             z.object({
-                // Either provide clientUserId to add existing user
                 clientUserId: z.string().optional(),
-                // Or provide name + email to create new client user
                 name: z.string().min(1).max(255).optional(),
                 email: z.string().email().optional(),
-                // Optional shipper-specific fields
                 nickname: z.string().max(255).optional(),
                 phone: z.string().max(50).optional(),
             }).refine(
@@ -74,7 +67,6 @@ export const addClient = createRoute({
     },
 });
 
-// GET /v1/clients/:clientId - Get client by user ID
 export const getClient = createRoute({
     middleware: [authenticated],
     tags: ['v1-clients'],
@@ -92,7 +84,6 @@ export const getClient = createRoute({
     },
 });
 
-// PATCH /v1/clients/:clientId - Update shipper-client relationship
 export const updateClient = createRoute({
     middleware: [authenticated],
     tags: ['v1-clients'],
@@ -118,7 +109,6 @@ export const updateClient = createRoute({
     },
 });
 
-// DELETE /v1/clients/:clientId - Remove client (soft delete relationship)
 export const removeClient = createRoute({
     middleware: [authenticated],
     tags: ['v1-clients'],

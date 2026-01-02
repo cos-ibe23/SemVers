@@ -1,5 +1,6 @@
 import { pgTable, text, varchar, timestamp, primaryKey } from 'drizzle-orm/pg-core';
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
+import { z } from 'zod';
 import { user } from './auth';
 
 /**
@@ -31,3 +32,23 @@ export const shipperClients = pgTable(
 export const selectShipperClientSchema = createSelectSchema(shipperClients);
 export const insertShipperClientSchema = createInsertSchema(shipperClients);
 export const patchShipperClientSchema = insertShipperClientSchema.partial();
+
+// Response schema for client user data
+export const clientUserResponseSchema = z.object({
+    id: z.string(),
+    name: z.string(),
+    email: z.string(),
+    image: z.string().nullable(),
+});
+
+// Response schema for shipper-client with nested user
+export const shipperClientResponseSchema = z.object({
+    shipperId: z.string(),
+    clientId: z.string(),
+    nickname: z.string().nullable(),
+    phone: z.string().nullable(),
+    createdAt: z.coerce.date().transform((d) => d.toISOString()),
+    client: clientUserResponseSchema,
+});
+
+export type ShipperClientResponse = z.infer<typeof shipperClientResponseSchema>;

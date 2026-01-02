@@ -14,8 +14,12 @@
     "db:studio": "drizzle-kit studio",
     "db:better-auth:generate": "npx @better-auth/cli@latest generate --config src/db/auth.ts --output src/db/schema/auth.ts",
     "db:seed": "tsx src/db/seed.ts",
+    "db:test:push": "NODE_ENV=test drizzle-kit push",
+    "db:test:migrate": "NODE_ENV=test drizzle-kit migrate",
     "lint": "eslint",
-    "test": "vitest"
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:integration": "npm run db:test:push && vitest run"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.8",

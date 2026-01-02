@@ -1,0 +1,15 @@
+version: '3.8'
+services:
+  db-test:
+    image: postgres:15-alpine
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_USER: imbod
+      POSTGRES_PASSWORD: imbod
+      POSTGRES_DB: imbod_test
+
+  redis-test:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"

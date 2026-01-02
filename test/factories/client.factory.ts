@@ -1,38 +1,38 @@
-import type { clients } from '../../src/db/schema';
+import type { user } from '../../src/db/schema';
 
 let clientIdCounter = 1;
 
-export type Client = typeof clients.$inferSelect;
+export type User = typeof user.$inferSelect;
 
 export interface CreateClientOptions {
-    id?: number;
-    ownerUserId: string;
+    id?: string;
     name?: string;
-    email?: string | null;
-    phone?: string | null;
-    avatarUrl?: string | null;
+    email?: string;
+    image?: string | null;
 }
 
 /**
- * Factory for creating test clients
+ * Factory for creating test client users
+ * Clients are users with role = 'CLIENT'
  */
 export class ClientFactory {
-    private clients: Client[] = [];
+    private clients: User[] = [];
 
     /**
-     * Create a test client
+     * Create a test client user
      */
-    create(options: CreateClientOptions): Client {
-        const id = options.id ?? clientIdCounter++;
-        const client: Client = {
+    create(options: CreateClientOptions = {}): User {
+        const counter = clientIdCounter++;
+        const id = options.id ?? `client-${counter}`;
+        const client: User = {
             id,
-            ownerUserId: options.ownerUserId,
-            name: options.name ?? `Test Client ${id}`,
-            email: options.email ?? `client${id}@example.com`,
-            phone: options.phone ?? null,
-            avatarUrl: options.avatarUrl ?? null,
-            deletedAt: null,
+            name: options.name ?? `Test Client ${counter}`,
+            email: options.email ?? `client${counter}@example.com`,
+            emailVerified: false,
+            image: options.image ?? null,
+            role: 'CLIENT',
             createdAt: new Date(),
+            updatedAt: new Date(),
         };
 
         this.clients.push(client);
@@ -42,24 +42,15 @@ export class ClientFactory {
     /**
      * Create multiple clients
      */
-    createMany(ownerUserId: string, count: number): Client[] {
-        return Array.from({ length: count }, () =>
-            this.create({ ownerUserId })
-        );
+    createMany(count: number): User[] {
+        return Array.from({ length: count }, () => this.create());
     }
 
     /**
      * Get all created clients
      */
-    getAll(): Client[] {
+    getAll(): User[] {
         return [...this.clients];
-    }
-
-    /**
-     * Get clients by owner
-     */
-    getByOwner(ownerUserId: string): Client[] {
-        return this.clients.filter(c => c.ownerUserId === ownerUserId);
     }
 
     /**

@@ -25,7 +25,10 @@ const EnvSchema = z.object({
 
     // Server
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
-    PORT: z.coerce.number().default(8080),
+    PORT: z.coerce.number().default(4000),
+
+    // Redis
+    REDIS_URL: z.string().url().default('redis://localhost:6379'),
 
     // S3-Compatible Storage (MinIO)
     S3_ENDPOINT: z.string().url(),
@@ -43,8 +46,9 @@ try {
     env = EnvSchema.parse(process.env);
 } catch (e) {
     if (e instanceof z.ZodError) {
+        // Use console here since logger depends on env
         console.error('❌ Invalid environment variables:');
-        console.error(e.flatten().fieldErrors);
+        console.error(JSON.stringify(e.flatten().fieldErrors, null, 2));
         process.exit(1);
     }
     throw e;

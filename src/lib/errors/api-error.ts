@@ -1,6 +1,7 @@
 import { StatusCodes, getReasonPhrase } from 'http-status-codes';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { ZodError } from 'zod';
+import { logger } from '../logger';
 
 export interface ApiErrorOptions {
     statusCode: ContentfulStatusCode;
@@ -62,7 +63,7 @@ export class ApiError extends Error {
 
     log(metadata: Record<string, unknown> = {}) {
         if (!this.loggable) return;
-        console.error({
+        logger.error({
             error: this.message,
             statusCode: this.statusCode,
             errors: this.errors,

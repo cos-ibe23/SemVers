@@ -2,6 +2,7 @@ import type { Context } from 'hono';
 import { db } from '../db';
 import type { User } from '../db/auth';
 import { ApiError } from '../lib/errors';
+import { logger } from '../lib/logger';
 import { getRequestScope } from '../lib/request-scope';
 import { UserCan } from '../lib/user-can';
 
@@ -98,12 +99,6 @@ export class Service {
             ...data,
         };
 
-        if (level === 'error') {
-            console.error(logData);
-        } else if (level === 'warn') {
-            console.warn(logData);
-        } else {
-            console.log(logData);
-        }
+        logger[level](logData, event);
     }
 }

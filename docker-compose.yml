@@ -1,6 +1,30 @@
 version: '3.8'
 
 services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: imbod-api
+    ports:
+      - '4000:4000'
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file:
+      - .env
+    environment:
+      # Override for Docker networking
+      - DATABASE_URL=postgres://imbod:imbod@postgres:5432/imbod
+      - REDIS_URL=redis://redis:6379
+      - S3_ENDPOINT=http://minio:9000
+      - BETTER_AUTH_URL=http://localhost:4000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
   postgres:
     image: postgres:16-alpine
     container_name: imbod-postgres
@@ -14,6 +38,17 @@ services:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U imbod']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: imbod-redis
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 5s
       timeout: 5s
       retries: 5

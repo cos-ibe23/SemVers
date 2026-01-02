@@ -1,0 +1,22 @@
+meta {
+  name: Sign Out
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/v1/auth/sign-out
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+docs {
+  Sign out the current user and invalidate the session.
+  
+  Requires authentication.
+}
+

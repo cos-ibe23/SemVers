@@ -1,0 +1,26 @@
+meta {
+  name: Get Session
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v1/auth/session
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+docs {
+  Get the current session information.
+  
+  Returns:
+  - session: Current session details
+  - user: Associated user
+  
+  Returns null if not authenticated.
+}
+

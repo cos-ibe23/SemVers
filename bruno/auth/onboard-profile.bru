@@ -1,11 +1,11 @@
 meta {
   name: Onboard Profile
   type: http
-  seq: 3
+  seq: 5
 }
 
 post {
-  url: {{baseUrl}}/v1/auth/profile/onboard
+  url: {{baseUrl}}/v1/auth/onboard
   body: json
   auth: bearer
 }
@@ -16,7 +16,6 @@ auth:bearer {
 
 body:json {
   {
-    "role": "SHIPPER",
     "businessName": "My Shipping Business",
     "street": "123 Test St",
     "city": "Lagos",
@@ -28,16 +27,17 @@ body:json {
 }
 
 docs {
-  Complete the onboarding process by creating a shipper profile.
-
+  Complete the onboarding process for a shipper.
+  
   Required fields:
-  - businessName: Name of the business (will generate request slug)
-
+  - businessName: Name of the business (generates unique request slug)
+  
   Optional fields:
-  - role: SHIPPER (default) or BUSINESS_OWNER
   - logoUrl: URL to business logo
   - street, city, state, country: Address fields
-  - phoneCountryCode, phoneNumber: Phone number
-
-  Returns 400 if user is already onboarded.
+  - phoneCountryCode, phoneNumber: Contact phone
+  
+  Returns 400 if:
+  - User is not a SHIPPER
+  - User is already onboarded
 }

@@ -1,7 +1,7 @@
 meta {
   name: Get Me
   type: http
-  seq: 1
+  seq: 4
 }
 
 get {
@@ -15,10 +15,11 @@ auth:bearer {
 }
 
 docs {
-  Get the current user with profile information.
-
+  Get the current authenticated user with full profile.
+  
   Returns:
-  - user: Basic user info (id, email, name, role)
+  - user: Full user object including business fields
   - session: Current session info
-  - profile: Shipper profile (null if not onboarded)
+  
+  Use this after sign-in to get complete user data.
 }

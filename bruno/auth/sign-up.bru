@@ -1,0 +1,35 @@
+meta {
+  name: Sign Up
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/v1/auth/sign-up/email
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "Test Shipper",
+    "email": "shipper@test.com",
+    "password": "password123"
+  }
+}
+
+docs {
+  Register a new user with email and password.
+  
+  Required fields:
+  - name: User's display name
+  - email: Valid email address
+  - password: Password (min 8 characters)
+  
+  Returns:
+  - user: Created user object
+  - session: New session
+  
+  Note: New users are created with role SHIPPER by default.
+}
+

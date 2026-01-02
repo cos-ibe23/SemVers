@@ -1,0 +1,33 @@
+meta {
+  name: Sign In
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/auth/sign-in/email
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "shipper@test.com",
+    "password": "password123"
+  }
+}
+
+docs {
+  Sign in with email and password.
+  
+  Required fields:
+  - email: Registered email address
+  - password: User's password
+  
+  Returns:
+  - user: User object
+  - session: New session with token
+  
+  Save the session token for authenticated requests.
+}
+

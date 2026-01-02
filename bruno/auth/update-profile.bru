@@ -1,7 +1,7 @@
 meta {
   name: Update Profile
   type: http
-  seq: 4
+  seq: 7
 }
 
 patch {
@@ -22,10 +22,13 @@ body:json {
 }
 
 docs {
-  Update the current user's shipper profile.
-
+  Update the current user's profile fields.
+  
   All fields are optional - only include fields you want to update.
-  Pass null to clear a field.
-
-  Returns 404 if user has not completed onboarding.
+  Pass null to clear a nullable field.
+  
+  Available fields:
+  - businessName, logoUrl
+  - street, city, state, country
+  - phoneCountryCode, phoneNumber
 }

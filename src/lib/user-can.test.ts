@@ -14,6 +14,7 @@ describe('UserCan', () => {
             emailVerified: true,
             image: null,
             role: UserRoles.SHIPPER,
+            isSystemUser: false,
             createdAt: new Date(),
             updatedAt: new Date(),
         };
@@ -25,6 +26,7 @@ describe('UserCan', () => {
             emailVerified: true,
             image: null,
             role: UserRoles.ADMIN,
+            isSystemUser: false,
             createdAt: new Date(),
             updatedAt: new Date(),
         };

@@ -48,6 +48,7 @@ export async function cleanTestDb() {
     // Child/junction tables first, then parent tables
 
     // Notification tables
+    await db.delete(schema.emailLogs);
     await db.delete(schema.notifications);
     await db.delete(schema.notificationSettings);
 

@@ -52,3 +52,21 @@ export const shipperClientResponseSchema = z.object({
 });
 
 export type ShipperClientResponse = z.infer<typeof shipperClientResponseSchema>;
+
+// Request schemas for shipper-client endpoints
+export const addClientRequestSchema = z
+    .object({
+        clientUserId: z.string().optional(),
+        name: z.string().min(1).max(255).optional(),
+        email: z.string().email().optional(),
+        nickname: z.string().max(255).optional(),
+        phone: z.string().max(50).optional(),
+    })
+    .refine((data) => data.clientUserId || (data.name && data.email), {
+        message: 'Either clientUserId or both name and email are required',
+    });
+
+export const updateClientRequestSchema = z.object({
+    nickname: z.string().max(255).nullable().optional(),
+    phone: z.string().max(50).nullable().optional(),
+});

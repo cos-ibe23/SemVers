@@ -1,5 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import { createRouter } from '../../lib/create-app';
+import * as HttpStatusCodes from '../../lib/http-status-codes';
 import { jsonContent } from '../../lib/openapi/helpers';
 
 const router = createRouter();
@@ -10,7 +11,7 @@ const versionRoute = createRoute({
     method: 'get',
     path: '/',
     responses: {
-        200: jsonContent(
+        [HttpStatusCodes.OK]: jsonContent(
             z.object({
                 version: z.string(),
                 name: z.string(),

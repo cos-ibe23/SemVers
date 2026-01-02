@@ -1,5 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import { authenticated } from '../../../middlewares';
+import * as HttpStatusCodes from '../../../lib/http-status-codes';
 import {
     jsonContent,
     jsonContentRequired,
@@ -33,8 +34,10 @@ export const listClients = createRoute({
         query: searchPaginationQuerySchema,
     },
     responses: {
-        200: jsonContent(paginatedSchema(shipperClientSchema), 'List of clients'),
-        401: jsonApiErrorContent('Not authenticated'),
+        [HttpStatusCodes.OK]: jsonContent(paginatedSchema(shipperClientSchema), 'List of clients'),
+        [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('The unauthorized response when not authenticated'),
+        [HttpStatusCodes.FORBIDDEN]: jsonApiErrorContent('The forbidden response when not authorized'),
+        [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('The internal server error response'),
     },
 });
 
@@ -59,11 +62,14 @@ export const addClient = createRoute({
         ),
     },
     responses: {
-        201: jsonContent(shipperClientSchema, 'Client added'),
-        400: jsonApiErrorContent('Bad request'),
-        401: jsonApiErrorContent('Not authenticated'),
-        404: jsonApiErrorContent('Client user not found'),
-        422: jsonApiErrorContent('Validation error'),
+        [HttpStatusCodes.CREATED]: jsonContent(shipperClientSchema, 'Client added'),
+        [HttpStatusCodes.BAD_REQUEST]: jsonApiErrorContent('The bad request response'),
+        [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('The unauthorized response when not authenticated'),
+        [HttpStatusCodes.FORBIDDEN]: jsonApiErrorContent('The forbidden response when not authorized'),
+        [HttpStatusCodes.NOT_FOUND]: jsonApiErrorContent('The not found response when client user not found'),
+        [HttpStatusCodes.CONFLICT]: jsonApiErrorContent('The conflict response when client already exists'),
+        [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonApiErrorContent('The validation error response'),
+        [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('The internal server error response'),
     },
 });
 
@@ -78,9 +84,11 @@ export const getClient = createRoute({
         }),
     },
     responses: {
-        200: jsonContent(shipperClientSchema, 'Client details'),
-        401: jsonApiErrorContent('Not authenticated'),
-        404: jsonApiErrorContent('Client not found'),
+        [HttpStatusCodes.OK]: jsonContent(shipperClientSchema, 'Client details'),
+        [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('The unauthorized response when not authenticated'),
+        [HttpStatusCodes.FORBIDDEN]: jsonApiErrorContent('The forbidden response when not authorized'),
+        [HttpStatusCodes.NOT_FOUND]: jsonApiErrorContent('The not found response when client not found'),
+        [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('The internal server error response'),
     },
 });
 
@@ -102,10 +110,13 @@ export const updateClient = createRoute({
         ),
     },
     responses: {
-        200: jsonContent(shipperClientSchema, 'Client updated'),
-        401: jsonApiErrorContent('Not authenticated'),
-        404: jsonApiErrorContent('Client not found'),
-        422: jsonApiErrorContent('Validation error'),
+        [HttpStatusCodes.OK]: jsonContent(shipperClientSchema, 'Client updated'),
+        [HttpStatusCodes.BAD_REQUEST]: jsonApiErrorContent('The bad request response'),
+        [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('The unauthorized response when not authenticated'),
+        [HttpStatusCodes.FORBIDDEN]: jsonApiErrorContent('The forbidden response when not authorized'),
+        [HttpStatusCodes.NOT_FOUND]: jsonApiErrorContent('The not found response when client not found'),
+        [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonApiErrorContent('The validation error response'),
+        [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('The internal server error response'),
     },
 });
 
@@ -120,9 +131,11 @@ export const removeClient = createRoute({
         }),
     },
     responses: {
-        200: jsonContent(z.object({ success: z.boolean() }), 'Client removed'),
-        401: jsonApiErrorContent('Not authenticated'),
-        404: jsonApiErrorContent('Client not found'),
+        [HttpStatusCodes.OK]: jsonContent(z.object({ success: z.boolean() }), 'Client removed'),
+        [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('The unauthorized response when not authenticated'),
+        [HttpStatusCodes.FORBIDDEN]: jsonApiErrorContent('The forbidden response when not authorized'),
+        [HttpStatusCodes.NOT_FOUND]: jsonApiErrorContent('The not found response when client not found'),
+        [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('The internal server error response'),
     },
 });
 

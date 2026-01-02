@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 // User roles for the `user` table (Better Auth managed)
+// Note: System user is a default admin user for personal use with admin role
 export const UserRoles = {
     ADMIN: 'ADMIN',
     SHIPPER: 'SHIPPER',
     CLIENT: 'CLIENT',
-    SYSTEM: 'SYSTEM', // Internal system user for background jobs, seeding, etc.
 } as const;
 
 export type UserRole = (typeof UserRoles)[keyof typeof UserRoles];
@@ -15,7 +15,6 @@ export const userRoleSchema = z.enum([
     UserRoles.ADMIN,
     UserRoles.SHIPPER,
     UserRoles.CLIENT,
-    UserRoles.SYSTEM,
 ]);
 
 // Resources that can be accessed
@@ -50,10 +49,9 @@ export type Action = (typeof Actions)[keyof typeof Actions];
 
 // Permission conditions
 export const PermissionConditions = {
-    IsOwner: 'is-owner',         // User owns the resource (ownerUserId/userId matches)
-    IsSelf: 'is-self',           // User is accessing their own user record
-    IsAdmin: 'is-admin',         // User is an admin
-    IsSystem: 'is-system',       // System user (internal operations)
+    IsOwner: 'is-owner', // User owns the resource (ownerUserId/userId matches)
+    IsSelf: 'is-self', // User is accessing their own user record
+    IsAdmin: 'is-admin', // User is an admin
 } as const;
 
 export type PermissionCondition = (typeof PermissionConditions)[keyof typeof PermissionConditions];

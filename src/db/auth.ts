@@ -42,11 +42,18 @@ export const auth = betterAuth({
     },
 
     // Custom user fields
+    // Note: Default role is SHIPPER for MVP (shipper-focused).
+    // Clients are created by shippers, admins are assigned internally.
     user: {
         additionalFields: {
             role: {
                 type: 'string',
                 defaultValue: UserRoles.SHIPPER,
+                input: false, // Cannot be set by user during signup
+            },
+            isSystemUser: {
+                type: 'boolean',
+                defaultValue: false,
                 input: false, // Cannot be set by user during signup
             },
         },

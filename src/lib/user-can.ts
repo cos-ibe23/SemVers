@@ -22,23 +22,11 @@ export interface ResourceWithOwner {
     id?: string | number;
 }
 
-// System user for internal operations
-const SYSTEM_USER: User = {
-    id: 'system',
-    name: 'System',
-    email: 'system@internal',
-    emailVerified: true,
-    image: null,
-    role: UserRoles.SYSTEM,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-};
-
 /**
  * UserCan - Permission checking class
  *
  * Checks if a user can perform an action on a resource.
- * Does NOT default to any role - requires explicit user or system context.
+ * Does NOT default to any role - requires explicit user or admin context.
  */
 export class UserCan {
     private user: User | null;
@@ -50,11 +38,31 @@ export class UserCan {
     }
 
     /**
-     * Create a UserCan instance with system privileges
-     * Use this for background jobs, seeding, migrations, etc.
+     * Create a UserCan instance with the real system user from the database.
+     * Use this for background jobs, migrations, etc. when you need proper audit trails.
+     *
+     * The system user must exist in the database (created during initial seeding).
+     * Throws NotFoundError if system user doesn't exist.
+     *
+     * @returns Promise<UserCan> - UserCan instance with real system user
      */
-    static asSystem(): UserCan {
-        return new UserCan(SYSTEM_USER);
+    static async asSystemUser(): Promise<UserCan> {
+        // Import dynamically to avoid circular dependency
+        const { AuthService } = await import('../services/auth-service');
+        const systemUser = await AuthService.getSystemUser();
+
+        // Convert UserResponse to User type for UserCan
+        return new UserCan({
+            id: systemUser.id,
+            name: systemUser.name,
+            email: systemUser.email,
+            emailVerified: systemUser.emailVerified,
+            image: systemUser.image,
+            role: systemUser.role,
+            isSystemUser: systemUser.isSystemUser,
+            createdAt: new Date(systemUser.createdAt),
+            updatedAt: new Date(systemUser.updatedAt),
+        });
     }
 
     /**
@@ -166,10 +174,10 @@ export class UserCan {
     }
 
     /**
-     * Check if this is a system user
+     * Check if this is the system user (for internal operations)
      */
-    public isSystem(): boolean {
-        return this.userRole === UserRoles.SYSTEM;
+    public isSystemUser(): boolean {
+        return (this.user as any)?.isSystemUser === true;
     }
 
     /**
@@ -216,9 +224,6 @@ export class UserCan {
         switch (condition) {
             case PermissionConditions.IsAdmin:
                 return this.isAdmin();
-
-            case PermissionConditions.IsSystem:
-                return this.isSystem();
 
             case PermissionConditions.IsSelf:
                 if (!resourceInstance) {

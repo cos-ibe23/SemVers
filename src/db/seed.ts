@@ -7,16 +7,32 @@
 
 import { db, closeDatabase } from './index';
 import { user, session, shipperClients, fxRates } from './schema';
+import { logger } from '../lib/logger';
 import { UserRoles } from '../permissions/types';
 
 async function seed() {
-    console.log('🌱 Starting database seed...\n');
+    logger.info('Starting database seed...');
 
     try {
-        // Create test users (admin, shippers, and clients)
-        console.log('Creating users...');
+        // Create system admin user (the single highest authority user)
+        logger.info('Creating system user...');
+        await db
+            .insert(user)
+            .values({
+                id: 'system-admin',
+                name: 'System Admin',
+                email: 'system@imbod.internal',
+                emailVerified: true,
+                role: UserRoles.ADMIN,
+                isSystemUser: true,
+            })
+            .onConflictDoNothing();
+        logger.info('Created system admin user');
 
-        // Admin user
+        // Create test users (admin, shippers, and clients)
+        logger.info('Creating users...');
+
+        // Admin user (regular admin for testing, not the system user)
         await db
             .insert(user)
             .values({
@@ -25,6 +41,7 @@ async function seed() {
                 email: 'admin@imbod.test',
                 emailVerified: true,
                 role: UserRoles.ADMIN,
+                isSystemUser: false,
             })
             .onConflictDoNothing();
 
@@ -91,10 +108,10 @@ async function seed() {
                 .onConflictDoNothing();
         }
 
-        console.log(`  ✓ Created 3 admin/shipper users + ${clientUsers.length} client users`);
+        logger.info({ adminCount: 3, clientCount: clientUsers.length }, 'Created admin/shipper users and client users');
 
         // Create shipper-client relationships
-        console.log('Creating shipper-client relationships...');
+        logger.info('Creating shipper-client relationships...');
 
         // Shipper 1's clients
         const shipper1Clients = [
@@ -135,11 +152,10 @@ async function seed() {
                 .onConflictDoNothing();
         }
 
-        console.log(`  ✓ Created ${shipper1Clients.length} clients for shipper-001`);
-        console.log(`  ✓ Created ${shipper2Clients.length} clients for shipper-002`);
+        logger.info({ shipper1Clients: shipper1Clients.length, shipper2Clients: shipper2Clients.length }, 'Created shipper-client relationships');
 
         // Create FX rates
-        console.log('Creating FX rates...');
+        logger.info('Creating FX rates...');
 
         const fxRatesData = [
             { buyRateUsdNgn: '1580.00', clientRateUsdNgn: '1620.00', atmFeePer990Usd: '5.00' },
@@ -149,10 +165,10 @@ async function seed() {
 
         const createdFxRates = await db.insert(fxRates).values(fxRatesData).onConflictDoNothing().returning();
 
-        console.log(`  ✓ Created ${createdFxRates.length} FX rates`);
+        logger.info({ count: createdFxRates.length }, 'Created FX rates');
 
         // Create test sessions for easy API testing
-        console.log('Creating test sessions...');
+        logger.info('Creating test sessions...');
 
         const oneWeekFromNow = new Date();
         oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
@@ -186,36 +202,20 @@ async function seed() {
 
         const createdSessions = await db.insert(session).values(sessionsData).onConflictDoNothing().returning();
 
-        console.log(`  ✓ Created ${createdSessions.length} test sessions`);
+        logger.info({ count: createdSessions.length }, 'Created test sessions');
 
-        console.log('\n✅ Seed completed successfully!\n');
+        logger.info('Seed completed successfully!');
 
-        console.log('📋 Test credentials:');
-        console.log('─────────────────────────────────────────────────────────────');
-        console.log('Admin User:');
-        console.log('  Email: admin@imbod.test');
-        console.log('  Session Token: test-admin-token-123');
-        console.log('');
-        console.log('Shipper User (onboarded):');
-        console.log('  Email: shipper@imbod.test');
-        console.log('  Session Token: test-shipper-token-123');
-        console.log('  Business: Test Shipping Co');
-        console.log('  Request Slug: test-shipping-co');
-        console.log('');
-        console.log('Shipper 2 (onboarded):');
-        console.log('  Email: jane@imbod.test');
-        console.log('  Session Token: test-shipper2-token-123');
-        console.log("  Business: Jane's Logistics");
-        console.log('  Request Slug: janes-logistics');
-        console.log('');
-        console.log('Client User:');
-        console.log('  Email: john@example.com');
-        console.log('  Session Token: test-client-token-123');
-        console.log('─────────────────────────────────────────────────────────────');
-        console.log('\n💡 Use the session token in the Authorization header:');
-        console.log('   Authorization: Bearer test-shipper-token-123\n');
+        logger.info({
+            testCredentials: {
+                admin: { email: 'admin@imbod.test', token: 'test-admin-token-123' },
+                shipper1: { email: 'shipper@imbod.test', token: 'test-shipper-token-123', business: 'Test Shipping Co', slug: 'test-shipping-co' },
+                shipper2: { email: 'jane@imbod.test', token: 'test-shipper2-token-123', business: "Jane's Logistics", slug: 'janes-logistics' },
+                client: { email: 'john@example.com', token: 'test-client-token-123' },
+            },
+        }, 'Test credentials (use token in Authorization: Bearer header)');
     } catch (error) {
-        console.error('❌ Seed failed:', error);
+        logger.error({ error }, 'Seed failed');
         throw error;
     } finally {
         await closeDatabase();
@@ -223,6 +223,6 @@ async function seed() {
 }
 
 seed().catch((error) => {
-    console.error(error);
+    logger.error({ error }, 'Seed script error');
     process.exit(1);
 });

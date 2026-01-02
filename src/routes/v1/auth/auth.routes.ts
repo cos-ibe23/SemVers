@@ -1,5 +1,6 @@
 import { createRoute, z } from '@hono/zod-openapi';
 import { authenticated } from '../../../middlewares';
+import * as HttpStatusCodes from '../../../lib/http-status-codes';
 import { jsonContent, jsonApiErrorContent } from '../../../lib/openapi/helpers';
 
 // User schema for responses (includes business fields)
@@ -10,6 +11,7 @@ const userSchema = z.object({
     emailVerified: z.boolean(),
     image: z.string().nullable(),
     role: z.string(),
+    isSystemUser: z.boolean(),
     createdAt: z.string(),
     updatedAt: z.string(),
     businessName: z.string().nullable(),
@@ -62,14 +64,16 @@ export const getMe = createRoute({
     method: 'get',
     path: '/auth/me',
     responses: {
-        200: jsonContent(
+        [HttpStatusCodes.OK]: jsonContent(
             z.object({
                 user: userSchema,
                 session: sessionSchema,
             }),
             'Current user with session'
         ),
-        401: jsonApiErrorContent('Not authenticated'),
+        [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('The unauthorized response when not authenticated'),
+        [HttpStatusCodes.NOT_FOUND]: jsonApiErrorContent('The not found response when user not found'),
+        [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('The internal server error response'),
     },
 });
 
@@ -83,9 +87,12 @@ export const onboard = createRoute({
         body: jsonContent(onboardRequestSchema, 'Onboarding data'),
     },
     responses: {
-        200: jsonContent(userSchema, 'User with business fields set'),
-        400: jsonApiErrorContent('Already onboarded or not a shipper'),
-        401: jsonApiErrorContent('Not authenticated'),
+        [HttpStatusCodes.OK]: jsonContent(userSchema, 'User with business fields set'),
+        [HttpStatusCodes.BAD_REQUEST]: jsonApiErrorContent('The bad request response when already onboarded or not a shipper'),
+        [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('The unauthorized response when not authenticated'),
+        [HttpStatusCodes.NOT_FOUND]: jsonApiErrorContent('The not found response when user not found'),
+        [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonApiErrorContent('The validation error response'),
+        [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('The internal server error response'),
     },
 });
 
@@ -99,9 +106,12 @@ export const updateProfile = createRoute({
         body: jsonContent(updateProfileRequestSchema, 'Profile update data'),
     },
     responses: {
-        200: jsonContent(userSchema, 'Updated user'),
-        401: jsonApiErrorContent('Not authenticated'),
-        404: jsonApiErrorContent('User not found'),
+        [HttpStatusCodes.OK]: jsonContent(userSchema, 'Updated user'),
+        [HttpStatusCodes.BAD_REQUEST]: jsonApiErrorContent('The bad request response'),
+        [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('The unauthorized response when not authenticated'),
+        [HttpStatusCodes.NOT_FOUND]: jsonApiErrorContent('The not found response when user not found'),
+        [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonApiErrorContent('The validation error response'),
+        [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('The internal server error response'),
     },
 });
 

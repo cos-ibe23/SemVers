@@ -1,7 +1,9 @@
 import { eq } from 'drizzle-orm';
 import slugify from 'slugify';
+import { db } from '../db';
 import { user, userResponseSchema, type UserResponse } from '../db/schema';
 import { ApiError, NotFoundError, BadRequestError } from '../lib/errors';
+import { logger } from '../lib/logger';
 import { UserRoles } from '../permissions/types';
 import { Service, type ServiceOptions } from './service';
 
@@ -33,21 +35,50 @@ export class AuthService extends Service {
     }
 
     /**
-     * Get the current user with all profile/business fields
+     * Get the system user from the database.
+     * This is a static method that can be called without user context.
+     * Used for background jobs, migrations, etc.
+     *
+     * Throws NotFoundError if system user doesn't exist - the system user
+     * should always be present in the database (created during seeding).
      */
-    public async getUser(): Promise<UserResponse | null> {
+    public static async getSystemUser(): Promise<UserResponse> {
+        try {
+            const [systemUser] = await db
+                .select()
+                .from(user)
+                .where(eq(user.isSystemUser, true))
+                .limit(1);
+
+            if (!systemUser) {
+                logger.error('System user not found in database. Please run database seeding.');
+                throw new NotFoundError('System user not found. Run database seeding first.');
+            }
+
+            return userResponseSchema.parse(systemUser);
+        } catch (error) {
+            const apiError = ApiError.parse(error);
+            apiError.log({ method: 'AuthService.getSystemUser' });
+            throw apiError;
+        }
+    }
+
+    /**
+     * Get the current authenticated user with all profile/business fields.
+     * Throws NotFoundError if user doesn't exist.
+     */
+    public async getUser(): Promise<UserResponse> {
         try {
             const userId = this.requireUserId();
 
-            const users = await this.db
+            const [foundUser] = await this.db
                 .select()
                 .from(user)
                 .where(eq(user.id, userId))
                 .limit(1);
 
-            const foundUser = users[0];
             if (!foundUser) {
-                return null;
+                throw new NotFoundError('User not found');
             }
 
             return userResponseSchema.parse(foundUser);
@@ -59,31 +90,6 @@ export class AuthService extends Service {
     }
 
     /**
-     * Get the current user or throw if not found
-     */
-    public async getUserOrThrow(): Promise<UserResponse> {
-        try {
-            const foundUser = await this.getUser();
-            if (!foundUser) {
-                throw new NotFoundError('User not found');
-            }
-            return foundUser;
-        } catch (error) {
-            const apiError = ApiError.parse(error);
-            apiError.log({ method: 'AuthService.getUserOrThrow' });
-            throw apiError;
-        }
-    }
-
-    /**
-     * Check if shipper has completed onboarding
-     */
-    public async isOnboarded(): Promise<boolean> {
-        const foundUser = await this.getUser();
-        return foundUser?.onboardedAt !== null;
-    }
-
-    /**
      * Complete shipper onboarding by setting business fields
      * Only shippers can onboard (get requestSlug)
      */
@@ -91,14 +97,12 @@ export class AuthService extends Service {
         try {
             const userId = this.requireUserId();
 
-            // Check if user is a shipper
-            const existingUsers = await this.db
+            const [existingUser] = await this.db
                 .select()
                 .from(user)
                 .where(eq(user.id, userId))
                 .limit(1);
 
-            const existingUser = existingUsers[0];
             if (!existingUser) {
                 throw new NotFoundError('User not found');
             }
@@ -148,13 +152,12 @@ export class AuthService extends Service {
         try {
             const userId = this.requireUserId();
 
-            const existingUsers = await this.db
+            const [existingUser] = await this.db
                 .select()
                 .from(user)
                 .where(eq(user.id, userId))
                 .limit(1);
 
-            const existingUser = existingUsers[0];
             if (!existingUser) {
                 throw new NotFoundError('User not found');
             }

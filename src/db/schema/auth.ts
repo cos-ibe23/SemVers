@@ -13,6 +13,7 @@ export const user = pgTable('user', {
     emailVerified: boolean('email_verified').notNull().default(false),
     image: text('image'),
     role: text('role').notNull().default(UserRoles.CLIENT),
+    isSystemUser: boolean('is_system_user').notNull().default(false),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
 
@@ -42,6 +43,7 @@ export const userResponseSchema = z.object({
     emailVerified: z.boolean(),
     image: z.string().nullable(),
     role: z.string(),
+    isSystemUser: z.boolean(),
     createdAt: z.coerce.date().transform((d) => d.toISOString()),
     updatedAt: z.coerce.date().transform((d) => d.toISOString()),
     businessName: z.string().nullable(),

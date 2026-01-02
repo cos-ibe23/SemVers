@@ -2,6 +2,7 @@ import { serve } from '@hono/node-server';
 import app from './app';
 import { env } from './env';
 import { closeDatabase } from './db';
+import { logger } from './lib/logger';
 
 const server = serve(
     {
@@ -9,24 +10,24 @@ const server = serve(
         port: env.PORT,
     },
     (info) => {
-        console.log(`🚀 Server running at http://localhost:${info.port}`);
-        console.log(`📚 API Reference: http://localhost:${info.port}/reference`);
-        console.log(`📄 OpenAPI JSON: http://localhost:${info.port}/doc`);
+        logger.info(`Server running at http://localhost:${info.port}`);
+        logger.info(`API Reference: http://localhost:${info.port}/reference`);
+        logger.info(`OpenAPI JSON: http://localhost:${info.port}/doc`);
     }
 );
 
 // Graceful shutdown
 const shutdown = async (signal: string) => {
-    console.log(`\n${signal} received. Shutting down gracefully...`);
+    logger.info(`${signal} received. Shutting down gracefully...`);
 
     server.close(async () => {
-        console.log('HTTP server closed.');
+        logger.info('HTTP server closed.');
 
         try {
             await closeDatabase();
-            console.log('Database connection closed.');
+            logger.info('Database connection closed.');
         } catch (error) {
-            console.error('Error closing database:', error);
+            logger.error({ error }, 'Error closing database');
         }
 
         process.exit(0);
@@ -34,7 +35,7 @@ const shutdown = async (signal: string) => {
 
     // Force exit after timeout
     setTimeout(() => {
-        console.error('Forced exit after timeout.');
+        logger.error('Forced exit after timeout.');
         process.exit(1);
     }, 10000);
 };
@@ -43,11 +44,11 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
 process.on('uncaughtException', (error) => {
-    console.error('Uncaught Exception:', error);
+    logger.error({ error }, 'Uncaught Exception');
     process.exit(1);
 });
 
 process.on('unhandledRejection', (reason) => {
-    console.error('Unhandled Rejection:', reason);
+    logger.error({ reason }, 'Unhandled Rejection');
     process.exit(1);
 });

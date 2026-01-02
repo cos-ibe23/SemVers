@@ -3,6 +3,7 @@ import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { pickups } from './pickups';
 import { boxes } from './boxes';
 import { fxRates } from './fx-rates';
+import { timestamps } from './helpers';
 
 export const itemStatusEnum = pgEnum('item_status', [
     'PENDING',      // In pickup, not yet in box
@@ -33,7 +34,7 @@ export const items = pgTable('items', {
         .references(() => fxRates.id),
     allocatedShipperUsd: decimal('allocated_shipper_usd', { precision: 10, scale: 2 }),
     status: itemStatusEnum('status').default('PENDING'),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
+    ...timestamps(),
 });
 
 // Zod schemas

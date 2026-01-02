@@ -3,6 +3,7 @@ import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { user } from './auth';
 import { pickups } from './pickups';
 import { boxes } from './boxes';
+import { timestamps } from './helpers';
 
 export const invoiceTypeEnum = pgEnum('invoice_type', ['QUOTE', 'FINAL']);
 
@@ -22,7 +23,7 @@ export const invoices = pgTable('invoices', {
     totalNgn: decimal('total_ngn', { precision: 15, scale: 2 }),
     pdfUrl: varchar('pdf_url', { length: 512 }),
     sentAt: timestamp('sent_at'),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
+    ...timestamps(),
 });
 
 // Zod schemas

@@ -4,6 +4,7 @@ import { user } from './auth';
 import { pickupRequests } from './pickup-requests';
 import { boxes } from './boxes';
 import { shipments } from './shipments';
+import { timestamps } from './helpers';
 
 export const notificationTypeEnum = pgEnum('notification_type', [
     'NEW_REQUEST',
@@ -29,7 +30,7 @@ export const notifications = pgTable('notifications', {
     relatedShipmentId: integer('related_shipment_id')
         .references(() => shipments.id, { onDelete: 'set null' }),
     isRead: boolean('is_read').default(false),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
+    ...timestamps(),
 });
 
 // Notification preferences
@@ -44,8 +45,7 @@ export const notificationSettings = pgTable('notification_settings', {
     emailOnPaymentVerified: boolean('email_on_payment_verified').default(true),
     emailOnBoxShipped: boolean('email_on_box_shipped').default(true),
     emailOnBoxDelivered: boolean('email_on_box_delivered').default(true),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
-    updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    ...timestamps(),
 });
 
 // Email logs for debugging
@@ -63,7 +63,7 @@ export const emailLogs = pgTable('email_logs', {
     status: varchar('status', { length: 20 }).default('PENDING'), // PENDING, SENT, FAILED
     errorMessage: text('error_message'),
     sentAt: timestamp('sent_at'),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
+    ...timestamps(),
 });
 
 // Zod schemas

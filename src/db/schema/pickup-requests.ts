@@ -2,6 +2,7 @@ import { pgTable, serial, text, integer, varchar, decimal, timestamp, pgEnum } f
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { user } from './auth';
 import { pickups } from './pickups';
+import { timestamps } from './helpers';
 
 export const pickupRequestStatusEnum = pgEnum('pickup_request_status', [
     'PENDING',
@@ -33,7 +34,7 @@ export const pickupRequests = pgTable('pickup_requests', {
     paymentStatus: paymentStatusEnum('payment_status').default('UNPAID'),
     convertedPickupId: integer('converted_pickup_id')
         .references(() => pickups.id, { onDelete: 'set null' }),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
+    ...timestamps(),
 });
 
 // Items in a pickup request
@@ -46,6 +47,7 @@ export const pickupRequestItems = pgTable('pickup_request_items', {
     description: text('description'),
     marketplaceUrl: varchar('marketplace_url', { length: 512 }),
     budgetUsd: decimal('budget_usd', { precision: 10, scale: 2 }),
+    ...timestamps(),
 });
 
 // Zod schemas

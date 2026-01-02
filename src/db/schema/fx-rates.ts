@@ -1,12 +1,13 @@
-import { pgTable, serial, decimal, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, serial, decimal } from 'drizzle-orm/pg-core';
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
+import { timestamps } from './helpers';
 
 export const fxRates = pgTable('fx_rates', {
     id: serial('id').primaryKey(),
     buyRateUsdNgn: decimal('buy_rate_usd_ngn', { precision: 12, scale: 4 }).notNull(),
     clientRateUsdNgn: decimal('client_rate_usd_ngn', { precision: 12, scale: 4 }).notNull(),
     atmFeePer990Usd: decimal('atm_fee_per_990_usd', { precision: 10, scale: 2 }).default('0'),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
+    ...timestamps(),
 });
 
 // Zod schemas

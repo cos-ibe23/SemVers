@@ -1,6 +1,7 @@
 import { pgTable, serial, text, varchar, decimal, timestamp, pgEnum } from 'drizzle-orm/pg-core';
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { user } from './auth';
+import { timestamps } from './helpers';
 
 export const boxStatusEnum = pgEnum('box_status', ['OPEN', 'SEALED', 'SHIPPED', 'DELIVERED']);
 
@@ -16,7 +17,7 @@ export const boxes = pgTable('boxes', {
     insuranceUsd: decimal('insurance_usd', { precision: 10, scale: 2 }).default('0'),
     status: boxStatusEnum('status').default('OPEN'),
     deliveredAt: timestamp('delivered_at'),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
+    ...timestamps(),
 });
 
 // Zod schemas

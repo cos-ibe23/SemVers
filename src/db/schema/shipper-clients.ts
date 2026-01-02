@@ -1,7 +1,8 @@
-import { pgTable, text, varchar, timestamp, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, text, varchar, primaryKey } from 'drizzle-orm/pg-core';
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { user } from './auth';
+import { timestamps } from './helpers';
 
 /**
  * Shipper-Client relationship table
@@ -22,8 +23,7 @@ export const shipperClients = pgTable(
         nickname: varchar('nickname', { length: 255 }),
         // Optional phone override (client may share different number with each shipper)
         phone: varchar('phone', { length: 50 }),
-        deletedAt: timestamp('deleted_at'), // soft delete
-        createdAt: timestamp('created_at').notNull().defaultNow(),
+        ...timestamps(),
     },
     (table) => [primaryKey({ columns: [table.shipperId, table.clientId] })]
 );

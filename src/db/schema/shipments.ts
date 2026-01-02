@@ -2,6 +2,7 @@ import { pgTable, serial, text, integer, varchar, date, timestamp, pgEnum, prima
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { user } from './auth';
 import { boxes } from './boxes';
+import { timestamps } from './helpers';
 
 export const shipmentStatusEnum = pgEnum('shipment_status', ['PENDING', 'IN_TRANSIT', 'DELIVERED']);
 
@@ -16,7 +17,7 @@ export const shipments = pgTable('shipments', {
     estimatedArrival: date('estimated_arrival'),
     actualArrival: date('actual_arrival'),
     status: shipmentStatusEnum('status').default('PENDING'),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
+    ...timestamps(),
 });
 
 // Junction table for boxes in shipments (many-to-many)

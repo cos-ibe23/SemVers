@@ -1,6 +1,7 @@
 import { pgTable, serial, text, integer, decimal, date, timestamp, pgEnum } from 'drizzle-orm/pg-core';
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { user } from './auth';
+import { timestamps } from './helpers';
 
 export const pickupStatusEnum = pgEnum('pickup_status', ['DRAFT', 'CONFIRMED', 'CANCELLED']);
 
@@ -18,7 +19,7 @@ export const pickups = pgTable('pickups', {
     pickupDate: date('pickup_date'),
     status: pickupStatusEnum('status').default('DRAFT'),
     sourceRequestId: integer('source_request_id'), // references pickupRequests if converted
-    createdAt: timestamp('created_at').notNull().defaultNow(),
+    ...timestamps(),
 });
 
 // Zod schemas

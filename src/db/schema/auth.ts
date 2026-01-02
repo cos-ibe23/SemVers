@@ -16,6 +16,7 @@ export const user = pgTable('user', {
     isSystemUser: boolean('is_system_user').notNull().default(false),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'), // Soft delete
 
     // Business/profile fields (any user can have business info)
     businessName: varchar('business_name', { length: 255 }),
@@ -103,6 +104,7 @@ export const session = pgTable('session', {
     userAgent: text('user_agent'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'), // Soft delete
 });
 
 export const account = pgTable('account', {
@@ -112,6 +114,7 @@ export const account = pgTable('account', {
         .references(() => user.id, { onDelete: 'cascade' }),
     accountId: text('account_id').notNull(),
     providerId: text('provider_id').notNull(), // 'google', 'credential', etc.
+    password: text('password'), // Hashed password for credential provider
     accessToken: text('access_token'),
     refreshToken: text('refresh_token'),
     accessTokenExpiresAt: timestamp('access_token_expires_at'),
@@ -120,6 +123,7 @@ export const account = pgTable('account', {
     idToken: text('id_token'),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'), // Soft delete
 });
 
 export const verification = pgTable('verification', {
@@ -129,4 +133,5 @@ export const verification = pgTable('verification', {
     expiresAt: timestamp('expires_at').notNull(),
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
+    deletedAt: timestamp('deleted_at'), // Soft delete
 });

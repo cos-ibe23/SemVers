@@ -2,6 +2,7 @@ import { pgTable, serial, text, integer, varchar, timestamp } from 'drizzle-orm/
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { user } from './auth';
 import { boxes } from './boxes';
+import { timestamps } from './helpers';
 
 export const pickupCodes = pgTable('pickup_codes', {
     id: serial('id').primaryKey(),
@@ -13,7 +14,7 @@ export const pickupCodes = pgTable('pickup_codes', {
         .references(() => user.id, { onDelete: 'cascade' }),
     code: varchar('code', { length: 20 }).notNull(),
     usedAt: timestamp('used_at'),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
+    ...timestamps(),
 });
 
 // Zod schemas

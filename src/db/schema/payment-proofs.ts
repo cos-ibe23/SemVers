@@ -2,6 +2,7 @@ import { pgTable, serial, integer, text, varchar, decimal, timestamp, pgEnum } f
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { user } from './auth';
 import { pickupRequests } from './pickup-requests';
+import { timestamps } from './helpers';
 
 export const paymentMethodEnum = pgEnum('payment_method', [
     'ZELLE',
@@ -34,7 +35,7 @@ export const paymentProofs = pgTable('payment_proofs', {
         .references(() => user.id, { onDelete: 'set null' }),
     verifiedAt: timestamp('verified_at'),
     rejectionReason: text('rejection_reason'),
-    createdAt: timestamp('created_at').notNull().defaultNow(),
+    ...timestamps(),
 });
 
 // Zod schemas

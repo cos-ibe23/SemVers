@@ -5,6 +5,11 @@ import { jsonContent } from '../lib/openapi/helpers';
 
 const router = createRouter();
 
+// Root redirect to API docs
+router.get('/', (c) => {
+    return c.redirect('/reference');
+});
+
 // Health check endpoint
 const healthRoute = createRoute({
     tags: ['health'],

@@ -31,10 +31,10 @@ export const pickupRequests = pgTable('pickup_requests', {
     // Client who submitted the request (auto-created from email)
     clientUserId: text('client_user_id').references(() => user.id, { onDelete: 'set null' }),
 
-    // Client info (kept for display even if user is deleted)
-    consumerName: varchar('consumer_name', { length: 255 }).notNull(),
-    consumerEmail: varchar('consumer_email', { length: 255 }),
-    consumerPhone: varchar('consumer_phone', { length: 50 }),
+    // Client info (denormalized - kept for display even if user is deleted)
+    clientName: varchar('client_name', { length: 255 }).notNull(),
+    clientEmail: varchar('client_email', { length: 255 }),
+    clientPhone: varchar('client_phone', { length: 50 }),
 
     // Pickup details
     numberOfItems: integer('number_of_items').notNull().default(1),
@@ -103,9 +103,9 @@ export const pickupRequestResponseSchema = z.object({
     id: z.number(),
     shipperUserId: z.string(),
     clientUserId: z.string().nullable(),
-    consumerName: z.string(),
-    consumerEmail: z.string().nullable(),
-    consumerPhone: z.string().nullable(),
+    clientName: z.string(),
+    clientEmail: z.string().nullable(),
+    clientPhone: z.string().nullable(),
     numberOfItems: z.number(),
     meetupLocation: z.string(),
     pickupTime: z.date(),
@@ -151,9 +151,9 @@ export const createPickupRequestPublicSchema = z.object({
 // Shipper-initiated request schema
 export const createPickupRequestShipperSchema = z.object({
     clientUserId: z.string().optional(),
-    consumerName: z.string().min(1).max(255),
-    consumerEmail: z.string().email().optional(),
-    consumerPhone: z.string().max(50).optional(),
+    clientName: z.string().min(1).max(255),
+    clientEmail: z.string().email().optional(),
+    clientPhone: z.string().max(50).optional(),
     numberOfItems: z.number().int().min(1),
     meetupLocation: z.string().min(1),
     pickupTime: z.string().datetime(),
@@ -167,9 +167,9 @@ export const createPickupRequestShipperSchema = z.object({
 
 // Update request schema
 export const updatePickupRequestSchema = z.object({
-    consumerName: z.string().min(1).max(255).optional(),
-    consumerEmail: z.string().email().optional(),
-    consumerPhone: z.string().max(50).optional(),
+    clientName: z.string().min(1).max(255).optional(),
+    clientEmail: z.string().email().optional(),
+    clientPhone: z.string().max(50).optional(),
     numberOfItems: z.number().int().min(1).optional(),
     meetupLocation: z.string().min(1).optional(),
     pickupTime: z.string().datetime().optional(),

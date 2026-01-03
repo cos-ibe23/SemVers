@@ -169,9 +169,9 @@ export class PublicRequestService {
                 .values({
                     shipperUserId: shipper.id,
                     clientUserId: client.id,
-                    consumerName: input.name,
-                    consumerEmail: input.email,
-                    consumerPhone: input.phone || null,
+                    clientName: input.name,
+                    clientEmail: input.email,
+                    clientPhone: input.phone || null,
                     numberOfItems: input.numberOfItems,
                     meetupLocation: input.meetupLocation,
                     pickupTime: new Date(input.pickupTime),

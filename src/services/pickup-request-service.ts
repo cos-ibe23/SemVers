@@ -13,9 +13,9 @@ import { Service, type ServiceOptions } from './service';
 import { PickupRequestStatus } from '../constants/enums';
 
 export interface UpdatePickupRequestInput {
-    consumerName?: string;
-    consumerEmail?: string;
-    consumerPhone?: string;
+    clientName?: string;
+    clientEmail?: string;
+    clientPhone?: string;
     numberOfItems?: number;
     meetupLocation?: string;
     pickupTime?: string;
@@ -116,11 +116,10 @@ export class PickupRequestService extends Service {
             let whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
             // Search filter (name, email)
-            // Note: sellerMetadata is JSON, so we search only consumer fields here
             if (search) {
                 const searchCondition = or(
-                    ilike(pickupRequests.consumerName, `%${search}%`),
-                    ilike(pickupRequests.consumerEmail, `%${search}%`)
+                    ilike(pickupRequests.clientName, `%${search}%`),
+                    ilike(pickupRequests.clientEmail, `%${search}%`)
                 );
                 whereClause = whereClause ? and(whereClause, searchCondition) : searchCondition;
             }
@@ -175,9 +174,9 @@ export class PickupRequestService extends Service {
 
             const updateData: Record<string, unknown> = {};
 
-            if (input.consumerName !== undefined) updateData.consumerName = input.consumerName;
-            if (input.consumerEmail !== undefined) updateData.consumerEmail = input.consumerEmail;
-            if (input.consumerPhone !== undefined) updateData.consumerPhone = input.consumerPhone;
+            if (input.clientName !== undefined) updateData.clientName = input.clientName;
+            if (input.clientEmail !== undefined) updateData.clientEmail = input.clientEmail;
+            if (input.clientPhone !== undefined) updateData.clientPhone = input.clientPhone;
             if (input.numberOfItems !== undefined) updateData.numberOfItems = input.numberOfItems;
             if (input.meetupLocation !== undefined) updateData.meetupLocation = input.meetupLocation;
             if (input.pickupTime !== undefined) updateData.pickupTime = new Date(input.pickupTime);

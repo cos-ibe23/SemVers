@@ -11,27 +11,27 @@ import { logger } from '../lib/logger';
 import { UserRoles } from '../permissions/types';
 import { Currency } from '../constants/enums';
 
-// Generate deterministic UUIDs for seed data (using crypto.randomUUID)
-// These are generated once and stored as constants for reproducibility
+// Fixed UUIDs for seed data - these must remain constant across seed runs
+// to ensure idempotency when using onConflictDoNothing
 const userIds = {
-    systemAdmin: crypto.randomUUID(),
-    admin: crypto.randomUUID(),
-    shipper1: crypto.randomUUID(),
-    shipper2: crypto.randomUUID(),
-    client1: crypto.randomUUID(),
-    client2: crypto.randomUUID(),
-    client3: crypto.randomUUID(),
-    client4: crypto.randomUUID(),
-    client5: crypto.randomUUID(),
-    client6: crypto.randomUUID(),
-    client7: crypto.randomUUID(),
+    systemAdmin: '00000000-0000-4000-a000-000000000001',
+    admin: '00000000-0000-4000-a000-000000000002',
+    shipper1: '00000000-0000-4000-a000-000000000003',
+    shipper2: '00000000-0000-4000-a000-000000000004',
+    client1: '00000000-0000-4000-a000-000000000101',
+    client2: '00000000-0000-4000-a000-000000000102',
+    client3: '00000000-0000-4000-a000-000000000103',
+    client4: '00000000-0000-4000-a000-000000000104',
+    client5: '00000000-0000-4000-a000-000000000105',
+    client6: '00000000-0000-4000-a000-000000000106',
+    client7: '00000000-0000-4000-a000-000000000107',
 };
 
 const sessionIds = {
-    admin: crypto.randomUUID(),
-    shipper1: crypto.randomUUID(),
-    shipper2: crypto.randomUUID(),
-    client1: crypto.randomUUID(),
+    admin: '00000000-0000-4000-b000-000000000001',
+    shipper1: '00000000-0000-4000-b000-000000000002',
+    shipper2: '00000000-0000-4000-b000-000000000003',
+    client1: '00000000-0000-4000-b000-000000000004',
 };
 
 async function seed() {
@@ -179,17 +179,19 @@ async function seed() {
         logger.info({ shipper1Clients: shipper1Clients.length, shipper2Clients: shipper2Clients.length }, 'Created shipper-client relationships');
 
         // Create FX rates (per-shipper, multi-currency)
+        // costRate = what shipper pays to buy the currency
+        // clientRate = what shipper charges clients (includes margin)
         logger.info('Creating FX rates...');
 
         // Shipper 1's FX rates
         const shipper1FxRates = [
-            { ownerUserId: userIds.shipper1, fromCurrency: Currency.USD, toCurrency: Currency.NGN, rate: '1600.000000', isActive: true },
-            { ownerUserId: userIds.shipper1, fromCurrency: Currency.GBP, toCurrency: Currency.NGN, rate: '2000.000000', isActive: true },
+            { ownerUserId: userIds.shipper1, fromCurrency: Currency.USD, toCurrency: Currency.NGN, costRate: '1500.000000', clientRate: '1600.000000', isActive: true },
+            { ownerUserId: userIds.shipper1, fromCurrency: Currency.GBP, toCurrency: Currency.NGN, costRate: '1900.000000', clientRate: '2000.000000', isActive: true },
         ];
 
         // Shipper 2's FX rates
         const shipper2FxRates = [
-            { ownerUserId: userIds.shipper2, fromCurrency: Currency.USD, toCurrency: Currency.NGN, rate: '1580.000000', isActive: true },
+            { ownerUserId: userIds.shipper2, fromCurrency: Currency.USD, toCurrency: Currency.NGN, costRate: '1500.000000', clientRate: '1580.000000', isActive: true },
         ];
 
         for (const rate of [...shipper1FxRates, ...shipper2FxRates]) {

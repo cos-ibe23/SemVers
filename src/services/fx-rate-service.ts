@@ -11,11 +11,13 @@ import { Service, type ServiceOptions } from './service';
 export interface CreateFxRateInput {
     fromCurrency: 'USD' | 'NGN' | 'GBP' | 'EUR';
     toCurrency: 'USD' | 'NGN' | 'GBP' | 'EUR';
-    rate: string;
+    costRate: string;
+    clientRate: string;
 }
 
 export interface UpdateFxRateInput {
-    rate?: string;
+    costRate?: string;
+    clientRate?: string;
     isActive?: boolean;
 }
 
@@ -67,7 +69,8 @@ export class FxRateService extends Service {
                     ownerUserId,
                     fromCurrency: input.fromCurrency,
                     toCurrency: input.toCurrency,
-                    rate: input.rate,
+                    costRate: input.costRate,
+                    clientRate: input.clientRate,
                     isActive: true,
                 })
                 .returning();
@@ -76,7 +79,8 @@ export class FxRateService extends Service {
                 rateId: newRate.id,
                 fromCurrency: input.fromCurrency,
                 toCurrency: input.toCurrency,
-                rate: input.rate,
+                costRate: input.costRate,
+                clientRate: input.clientRate,
             });
 
             return fxRateResponseSchema.parse(newRate);
@@ -244,7 +248,8 @@ export class FxRateService extends Service {
             const [updatedRate] = await this.db
                 .update(fxRates)
                 .set({
-                    rate: input.rate ?? existingRate.rate,
+                    costRate: input.costRate ?? existingRate.costRate,
+                    clientRate: input.clientRate ?? existingRate.clientRate,
                     isActive: input.isActive ?? existingRate.isActive,
                 })
                 .where(eq(fxRates.id, id))

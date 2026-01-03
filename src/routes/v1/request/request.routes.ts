@@ -9,8 +9,16 @@ import {
     pickupRequestResponseSchema,
     createPickupRequestPublicSchema,
 } from '../../../db/schema/pickup-requests';
+import { CURRENCIES } from '../../../constants/enums';
 
 const TAGS = ['v1-public-request'] as const;
+
+// Public FX rate schema (minimal info for clients)
+const publicFxRateSchema = z.object({
+    fromCurrency: z.enum(CURRENCIES),
+    toCurrency: z.enum(CURRENCIES),
+    rate: z.string(),
+});
 
 // Public shipper info for the form
 const shipperPublicInfoSchema = z.object({
@@ -21,6 +29,7 @@ const shipperPublicInfoSchema = z.object({
     city: z.string().nullable(),
     state: z.string().nullable(),
     country: z.string().nullable(),
+    fxRates: z.array(publicFxRateSchema),
 });
 
 export const getShipperBySlug = createRoute({

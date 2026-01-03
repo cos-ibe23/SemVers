@@ -57,8 +57,8 @@ describe('FX Rates Routes', () => {
 
             // Create rates for both shippers
             await db.insert(fxRates).values([
-                { ownerUserId: shipper1.id, fromCurrency: Currency.USD, toCurrency: Currency.NGN, rate: '1600.00' },
-                { ownerUserId: shipper2.id, fromCurrency: Currency.USD, toCurrency: Currency.NGN, rate: '1580.00' },
+                { ownerUserId: shipper1.id, fromCurrency: Currency.USD, toCurrency: Currency.NGN, costRate: '1500.00', clientRate: '1600.00' },
+                { ownerUserId: shipper2.id, fromCurrency: Currency.USD, toCurrency: Currency.NGN, costRate: '1480.00', clientRate: '1580.00' },
             ]);
 
             const app = createTestApp();
@@ -73,15 +73,16 @@ describe('FX Rates Routes', () => {
             const body = await response.json();
             expect(body).toHaveLength(1);
             expect(body[0].ownerUserId).toBe(shipper1.id);
-            expect(body[0].rate).toBe('1600.00');
+            expect(body[0].costRate).toBe('1500.000000');
+            expect(body[0].clientRate).toBe('1600.000000');
         });
 
         it('should filter by fromCurrency', async () => {
             const shipper = await userFactory.createShipper();
 
             await db.insert(fxRates).values([
-                { ownerUserId: shipper.id, fromCurrency: Currency.USD, toCurrency: Currency.NGN, rate: '1600.00' },
-                { ownerUserId: shipper.id, fromCurrency: Currency.GBP, toCurrency: Currency.NGN, rate: '2000.00' },
+                { ownerUserId: shipper.id, fromCurrency: Currency.USD, toCurrency: Currency.NGN, costRate: '1500.00', clientRate: '1600.00' },
+                { ownerUserId: shipper.id, fromCurrency: Currency.GBP, toCurrency: Currency.NGN, costRate: '1900.00', clientRate: '2000.00' },
             ]);
 
             const app = createTestApp();
@@ -132,7 +133,7 @@ describe('FX Rates Routes', () => {
             const shipper = await userFactory.createShipper();
 
             await db.insert(fxRates).values([
-                { ownerUserId: shipper.id, fromCurrency: Currency.USD, toCurrency: Currency.NGN, rate: '1600.00', isActive: true },
+                { ownerUserId: shipper.id, fromCurrency: Currency.USD, toCurrency: Currency.NGN, costRate: '1500.00', clientRate: '1600.00', isActive: true },
             ]);
 
             const app = createTestApp();
@@ -146,7 +147,8 @@ describe('FX Rates Routes', () => {
             expect(response.status).toBe(200);
             const body = await response.json();
             expect(body).not.toBeNull();
-            expect(body.rate).toBe('1600.00');
+            expect(body.costRate).toBe('1500.000000');
+            expect(body.clientRate).toBe('1600.000000');
             expect(body.isActive).toBe(true);
         });
     });
@@ -163,7 +165,8 @@ describe('FX Rates Routes', () => {
                 body: JSON.stringify({
                     fromCurrency: 'USD',
                     toCurrency: 'NGN',
-                    rate: '1600.00',
+                    costRate: '1500.00',
+                    clientRate: '1600.00',
                 }),
             });
 
@@ -183,7 +186,8 @@ describe('FX Rates Routes', () => {
                 body: JSON.stringify({
                     fromCurrency: 'USD',
                     toCurrency: 'NGN',
-                    rate: '1600.00',
+                    costRate: '1500.00',
+                    clientRate: '1600.00',
                 }),
             });
 
@@ -192,7 +196,8 @@ describe('FX Rates Routes', () => {
             expect(body.ownerUserId).toBe(shipper.id);
             expect(body.fromCurrency).toBe('USD');
             expect(body.toCurrency).toBe('NGN');
-            expect(body.rate).toBe('1600.00');
+            expect(body.costRate).toBe('1500.000000');
+            expect(body.clientRate).toBe('1600.000000');
             expect(body.isActive).toBe(true);
         });
 
@@ -206,7 +211,8 @@ describe('FX Rates Routes', () => {
                     ownerUserId: shipper.id,
                     fromCurrency: Currency.USD,
                     toCurrency: Currency.NGN,
-                    rate: '1500.00',
+                    costRate: '1400.00',
+                    clientRate: '1500.00',
                     isActive: true,
                 })
                 .returning();
@@ -223,7 +229,8 @@ describe('FX Rates Routes', () => {
                 body: JSON.stringify({
                     fromCurrency: 'USD',
                     toCurrency: 'NGN',
-                    rate: '1600.00',
+                    costRate: '1500.00',
+                    clientRate: '1600.00',
                 }),
             });
 
@@ -252,13 +259,14 @@ describe('FX Rates Routes', () => {
                 body: JSON.stringify({
                     fromCurrency: 'USD',
                     toCurrency: 'USD',
-                    rate: '1.00',
+                    costRate: '1.00',
+                    clientRate: '1.00',
                 }),
             });
 
             expect(response.status).toBe(400);
             const body = await response.json();
-            expect(body.error).toContain('same');
+            expect(body.error).toContain('different');
         });
     });
 
@@ -271,13 +279,13 @@ describe('FX Rates Routes', () => {
             const response = await app.request('/fx-rates/1', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rate: '1700.00' }),
+                body: JSON.stringify({ clientRate: '1700.00' }),
             });
 
             expect(response.status).toBe(401);
         });
 
-        it('should update rate', async () => {
+        it('should update rates', async () => {
             const shipper = await userFactory.createShipper();
 
             const [rate] = await db
@@ -286,7 +294,8 @@ describe('FX Rates Routes', () => {
                     ownerUserId: shipper.id,
                     fromCurrency: Currency.USD,
                     toCurrency: Currency.NGN,
-                    rate: '1600.00',
+                    costRate: '1500.00',
+                    clientRate: '1600.00',
                 })
                 .returning();
 
@@ -297,12 +306,13 @@ describe('FX Rates Routes', () => {
             const response = await app.request(`/fx-rates/${rate.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rate: '1700.00' }),
+                body: JSON.stringify({ costRate: '1550.00', clientRate: '1700.00' }),
             });
 
             expect(response.status).toBe(200);
             const body = await response.json();
-            expect(body.rate).toBe('1700.00');
+            expect(body.costRate).toBe('1550.000000');
+            expect(body.clientRate).toBe('1700.000000');
         });
 
         it('should return 404 for non-existent rate', async () => {
@@ -315,13 +325,13 @@ describe('FX Rates Routes', () => {
             const response = await app.request('/fx-rates/99999', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rate: '1700.00' }),
+                body: JSON.stringify({ clientRate: '1700.00' }),
             });
 
             expect(response.status).toBe(404);
         });
 
-        it('should return 403 for other shipper rate', async () => {
+        it('should return 404 for other shipper rate', async () => {
             const shipper1 = await userFactory.createShipper({ email: 'shipper1@test.com' });
             const shipper2 = await userFactory.createShipper({ email: 'shipper2@test.com' });
 
@@ -331,7 +341,8 @@ describe('FX Rates Routes', () => {
                     ownerUserId: shipper1.id,
                     fromCurrency: Currency.USD,
                     toCurrency: Currency.NGN,
-                    rate: '1600.00',
+                    costRate: '1500.00',
+                    clientRate: '1600.00',
                 })
                 .returning();
 
@@ -342,7 +353,7 @@ describe('FX Rates Routes', () => {
             const response = await app.request(`/fx-rates/${rate.id}`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rate: '1700.00' }),
+                body: JSON.stringify({ clientRate: '1700.00' }),
             });
 
             expect(response.status).toBe(404);
@@ -371,7 +382,8 @@ describe('FX Rates Routes', () => {
                     ownerUserId: shipper.id,
                     fromCurrency: Currency.USD,
                     toCurrency: Currency.NGN,
-                    rate: '1600.00',
+                    costRate: '1500.00',
+                    clientRate: '1600.00',
                 })
                 .returning();
 

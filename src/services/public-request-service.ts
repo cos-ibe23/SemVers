@@ -4,6 +4,7 @@ import {
     user,
     pickupRequests,
     shipperClients,
+    fxRates,
     pickupRequestResponseSchema,
     type PickupRequestResponse,
     type SellerMetadata,
@@ -11,7 +12,13 @@ import {
 import { ApiError, NotFoundError, BadRequestError } from '../lib/errors';
 import { logger } from '../lib/logger';
 import { UserRoles } from '../permissions/types';
-import { PickupRequestStatus, PaymentStatus, Currency } from '../constants/enums';
+import { PickupRequestStatus, PaymentStatus, Currency, type CurrencyType } from '../constants/enums';
+
+export interface PublicFxRate {
+    fromCurrency: CurrencyType;
+    toCurrency: CurrencyType;
+    rate: string;
+}
 
 export interface ShipperPublicInfo {
     id: string;
@@ -21,6 +28,7 @@ export interface ShipperPublicInfo {
     city: string | null;
     state: string | null;
     country: string | null;
+    fxRates: PublicFxRate[];
 }
 
 export interface CreatePublicRequestInput {
@@ -93,6 +101,21 @@ export class PublicRequestService {
                 throw new BadRequestError('This shipper has not completed onboarding');
             }
 
+            // Fetch shipper's active FX rates (only client rate - not cost rate)
+            const activeFxRates = await db
+                .select({
+                    fromCurrency: fxRates.fromCurrency,
+                    toCurrency: fxRates.toCurrency,
+                    clientRate: fxRates.clientRate,
+                })
+                .from(fxRates)
+                .where(
+                    and(
+                        eq(fxRates.ownerUserId, shipper.id),
+                        eq(fxRates.isActive, true)
+                    )
+                );
+
             return {
                 id: shipper.id,
                 name: shipper.name,
@@ -101,6 +124,11 @@ export class PublicRequestService {
                 city: shipper.city,
                 state: shipper.state,
                 country: shipper.country,
+                fxRates: activeFxRates.map((rate) => ({
+                    fromCurrency: rate.fromCurrency as CurrencyType,
+                    toCurrency: rate.toCurrency as CurrencyType,
+                    rate: rate.clientRate, // Only expose client rate publicly
+                })),
             };
         } catch (error) {
             const apiError = ApiError.parse(error);

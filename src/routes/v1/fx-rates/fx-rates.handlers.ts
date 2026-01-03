@@ -86,7 +86,8 @@ export const createFxRate: AppRouteHandler<CreateFxRateRoute> = async (c) => {
         const result = await service.create({
             fromCurrency: body.fromCurrency,
             toCurrency: body.toCurrency,
-            rate: body.rate,
+            costRate: body.costRate,
+            clientRate: body.clientRate,
         });
 
         return c.json(result, HttpStatusCodes.CREATED);

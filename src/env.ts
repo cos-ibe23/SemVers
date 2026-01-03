@@ -30,11 +30,11 @@ const EnvSchema = z.object({
     // Redis
     REDIS_URL: z.string().url().default('redis://localhost:6379'),
 
-    // S3-Compatible Storage (MinIO)
-    S3_ENDPOINT: z.string().url(),
-    S3_ACCESS_KEY: z.string().min(1),
-    S3_SECRET_KEY: z.string().min(1),
-    S3_BUCKET: z.string().min(1),
+    // S3-Compatible Storage (MinIO) - Optional, only required if file uploads are enabled
+    S3_ENDPOINT: z.string().url().optional(),
+    S3_ACCESS_KEY: z.string().min(1).optional(),
+    S3_SECRET_KEY: z.string().min(1).optional(),
+    S3_BUCKET: z.string().min(1).optional(),
     S3_REGION: z.string().default('us-east-1'),
 
     // Production origins (comma-separated list)

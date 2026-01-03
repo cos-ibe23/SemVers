@@ -17,6 +17,17 @@ describe('UserCan', () => {
             isSystemUser: false,
             createdAt: new Date(),
             updatedAt: new Date(),
+            deletedAt: null,
+            businessName: null,
+            logoUrl: null,
+            street: null,
+            city: null,
+            state: null,
+            country: null,
+            phoneCountryCode: null,
+            phoneNumber: null,
+            requestSlug: null,
+            onboardedAt: null,
         };
 
         adminUser = {
@@ -29,6 +40,17 @@ describe('UserCan', () => {
             isSystemUser: false,
             createdAt: new Date(),
             updatedAt: new Date(),
+            deletedAt: null,
+            businessName: null,
+            logoUrl: null,
+            street: null,
+            city: null,
+            state: null,
+            country: null,
+            phoneCountryCode: null,
+            phoneNumber: null,
+            requestSlug: null,
+            onboardedAt: null,
         };
     });
 

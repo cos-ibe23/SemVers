@@ -9,6 +9,19 @@ import {
     updateProfileRequestSchema,
 } from '../../../db/schema/auth';
 
+// Multipart form schema for onboarding (supports file upload)
+const onboardMultipartSchema = z.object({
+    businessName: z.string().min(1).max(255),
+    logoUrl: z.string().url().max(512).optional(),
+    logoFile: z.instanceof(File).optional(),
+    street: z.string().max(255).optional(),
+    city: z.string().max(100).optional(),
+    state: z.string().max(100).optional(),
+    country: z.string().max(100).optional(),
+    phoneCountryCode: z.string().max(10).optional(),
+    phoneNumber: z.string().max(20).optional(),
+});
+
 // Tag for all auth routes
 const TAGS = ['v1-auth'] as const;
 
@@ -33,13 +46,25 @@ export const getMe = createRoute({
 });
 
 // POST /v1/auth/onboard - Complete shipper onboarding
+// Supports both JSON (with logoUrl) and multipart/form-data (with logoFile)
 export const onboard = createRoute({
     middleware: [authenticated],
     tags: [...TAGS],
     method: 'post',
     path: '/auth/onboard',
     request: {
-        body: jsonContent(onboardRequestSchema, 'Onboarding data'),
+        body: {
+            content: {
+                'application/json': {
+                    schema: onboardRequestSchema,
+                },
+                'multipart/form-data': {
+                    schema: onboardMultipartSchema,
+                },
+            },
+            description: 'Onboarding data. Can send logoUrl (string) or logoFile (file upload)',
+            required: true,
+        },
     },
     responses: {
         [HttpStatusCodes.OK]: jsonContent(userResponseSchema, 'User with business fields set'),

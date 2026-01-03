@@ -38,9 +38,18 @@ function addOriginHeader(request: Request, origin: string): Request {
 
 // Mount Better Auth routes with Origin handling
 app.on(['POST', 'GET'], '/v1/auth/*', async (c) => {
+    const path = c.req.path;
+
+    // Skip custom routes - these are handled by the custom auth router
+    const customRoutes = ['/v1/auth/me', '/v1/auth/onboard', '/v1/auth/profile'];
+    if (customRoutes.includes(path)) {
+        // Let the request fall through to the custom routes
+        return;
+    }
+
+    // Handle Better Auth built-in routes (sign-in, sign-up, sign-out, session, etc.)
     const request = c.req.raw;
     const origin = request.headers.get('origin');
-    const path = c.req.path;
 
     // In production, allow requests without Origin if they have a valid API key
     // (for mobile apps or server-to-server API clients)

@@ -23,8 +23,9 @@ export const listClients: AppRouteHandler<ListClientsRoute> = async (c) => {
 
         switch (apiError.statusCode) {
             case HttpStatusCodes.UNAUTHORIZED:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.UNAUTHORIZED);
             case HttpStatusCodes.FORBIDDEN:
-                return c.json(apiError.toResponseError(), apiError.statusCode);
+                return c.json(apiError.toResponseError(), HttpStatusCodes.FORBIDDEN);
             default:
                 return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
         }
@@ -56,12 +57,17 @@ export const addClient: AppRouteHandler<AddClientRoute> = async (c) => {
 
         switch (apiError.statusCode) {
             case HttpStatusCodes.BAD_REQUEST:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.BAD_REQUEST);
             case HttpStatusCodes.UNAUTHORIZED:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.UNAUTHORIZED);
             case HttpStatusCodes.FORBIDDEN:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.FORBIDDEN);
             case HttpStatusCodes.NOT_FOUND:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.NOT_FOUND);
             case HttpStatusCodes.CONFLICT:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.CONFLICT);
             case HttpStatusCodes.UNPROCESSABLE_ENTITY:
-                return c.json(apiError.toResponseError(), apiError.statusCode);
+                return c.json(apiError.toResponseError(), HttpStatusCodes.UNPROCESSABLE_ENTITY);
             default:
                 return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
         }
@@ -81,9 +87,11 @@ export const getClient: AppRouteHandler<GetClientRoute> = async (c) => {
 
         switch (apiError.statusCode) {
             case HttpStatusCodes.UNAUTHORIZED:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.UNAUTHORIZED);
             case HttpStatusCodes.FORBIDDEN:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.FORBIDDEN);
             case HttpStatusCodes.NOT_FOUND:
-                return c.json(apiError.toResponseError(), apiError.statusCode);
+                return c.json(apiError.toResponseError(), HttpStatusCodes.NOT_FOUND);
             default:
                 return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
         }
@@ -128,9 +136,11 @@ export const removeClient: AppRouteHandler<RemoveClientRoute> = async (c) => {
 
         switch (apiError.statusCode) {
             case HttpStatusCodes.UNAUTHORIZED:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.UNAUTHORIZED);
             case HttpStatusCodes.FORBIDDEN:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.FORBIDDEN);
             case HttpStatusCodes.NOT_FOUND:
-                return c.json(apiError.toResponseError(), apiError.statusCode);
+                return c.json(apiError.toResponseError(), HttpStatusCodes.NOT_FOUND);
             default:
                 return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
         }

@@ -34,6 +34,7 @@ export class UserCan {
 
     constructor(user: User | null) {
         this.user = user;
+        // User type from schema includes role
         this.userRole = user?.role ?? null;
     }
 
@@ -52,6 +53,7 @@ export class UserCan {
         const systemUser = await AuthService.getSystemUser();
 
         // Convert UserResponse to User type for UserCan
+        // Note: User type from schema includes all fields, so we can safely cast
         return new UserCan({
             id: systemUser.id,
             name: systemUser.name,
@@ -62,7 +64,7 @@ export class UserCan {
             isSystemUser: systemUser.isSystemUser,
             createdAt: new Date(systemUser.createdAt),
             updatedAt: new Date(systemUser.updatedAt),
-        });
+        } as User);
     }
 
     /**
@@ -177,7 +179,8 @@ export class UserCan {
      * Check if this is the system user (for internal operations)
      */
     public isSystemUser(): boolean {
-        return (this.user as any)?.isSystemUser === true;
+        // User type from schema includes isSystemUser
+        return this.user?.isSystemUser === true;
     }
 
     /**

@@ -63,3 +63,14 @@ export class BadRequestError extends ApiError {
         this.name = 'BadRequestError';
     }
 }
+
+export class ServerError extends ApiError {
+    constructor(message = 'Internal server error', options?: { metadata?: Record<string, unknown> }) {
+        super(message, {
+            statusCode: 500,
+            statusPhrase: getReasonPhrase(500),
+            metadata: options?.metadata,
+        });
+        this.name = 'ServerError';
+    }
+}

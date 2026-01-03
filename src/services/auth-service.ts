@@ -4,7 +4,7 @@ import { db } from '../db';
 import { user, userResponseSchema, type UserResponse } from '../db/schema';
 import { ApiError, NotFoundError, BadRequestError } from '../lib/errors';
 import { logger } from '../lib/logger';
-import { UserRoles } from '../permissions/types';
+import { Resources } from '../permissions/types';
 import { Service, type ServiceOptions } from './service';
 
 export interface OnboardInput {
@@ -92,10 +92,21 @@ export class AuthService extends Service {
     /**
      * Complete shipper onboarding by setting business fields
      * Only shippers can onboard (get requestSlug)
+     * Uses UserCan RBAC to check permissions
      */
     public async onboard(input: OnboardInput): Promise<UserResponse> {
         try {
             const userId = this.requireUserId();
+
+            // Check permissions using UserCan RBAC
+            if (!this.userCan.canCreate(Resources.PROFILES)) {
+                throw new BadRequestError('You do not have permission to complete onboarding');
+            }
+
+            // Only shippers can onboard (get requestSlug)
+            if (!this.userCan.isShipper()) {
+                throw new BadRequestError('Only shippers can complete onboarding');
+            }
 
             const [existingUser] = await this.db
                 .select()
@@ -105,10 +116,6 @@ export class AuthService extends Service {
 
             if (!existingUser) {
                 throw new NotFoundError('User not found');
-            }
-
-            if (existingUser.role !== UserRoles.SHIPPER) {
-                throw new BadRequestError('Only shippers can complete onboarding');
             }
 
             if (existingUser.onboardedAt) {

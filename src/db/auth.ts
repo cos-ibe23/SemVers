@@ -107,11 +107,11 @@ export const auth = betterAuth({
     plugins: [
         customSession(async ({ user: userFromSession, session }) => {
             // Fetch full user from database to get isSystemUser flag
-            const [u] = await db
-                .select()
-                .from(user)
-                .where(eq(user.id, userFromSession.id))
-                .limit(1);
+                    const [u] = await db
+                        .select()
+                        .from(user)
+                        .where(eq(user.id, userFromSession.id))
+                        .limit(1);
 
             if (!u) {
                 // Fallback to original user if not found in database
@@ -148,4 +148,10 @@ export const auth = betterAuth({
 
 // Type exports for use in handlers
 export type Session = typeof auth.$Infer.Session.session;
-export type User = typeof auth.$Infer.Session.user;
+
+// Better Auth session user type (for session handling)
+export type SessionUser = typeof auth.$Infer.Session.user;
+
+// Full User type from database schema (includes role, isSystemUser, and all other fields)
+// This is the type that should be used in UserCan and throughout the application
+export type User = typeof user.$inferSelect;

@@ -1,0 +1,47 @@
+meta {
+  name: Create Pickup
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/pickups
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+body:json {
+  {
+    "clientUserId": "client-user-id-here",
+    "pickupFeeUsd": 25.00,
+    "itemPriceUsd": 850.00,
+    "notes": "Client requested express shipping",
+    "pickupDate": "2024-02-15",
+    "fxRateId": 1
+  }
+}
+
+docs {
+  Create a pickup directly (without going through pickup request flow).
+
+  Use this for walk-in clients or when the shipper initiates the pickup.
+  For the full request flow, use /v1/request/{slug} (public) or
+  /v1/pickup-requests (shipper-initiated) instead.
+
+  Request Body:
+  REQUIRED:
+  - clientUserId: The client's user ID
+
+  OPTIONAL:
+  - pickupFeeUsd: Pickup fee in USD
+  - itemPriceUsd: Total item price in USD
+  - notes: Additional notes
+  - pickupDate: ISO date string (YYYY-MM-DD)
+  - fxRateId: FX rate to use for conversions
+
+  Returns the created pickup with status DRAFT.
+}

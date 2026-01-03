@@ -1,0 +1,43 @@
+meta {
+  name: Update Pickup
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/v1/pickups/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+body:json {
+  {
+    "status": "CONFIRMED",
+    "pickupFeeUsd": 30.00,
+    "notes": "Updated notes"
+  }
+}
+
+docs {
+  Update a pickup.
+
+  Path Parameters:
+  - id: The pickup ID
+
+  Request Body (all optional):
+  - pickupFeeUsd: Pickup fee in USD
+  - itemPriceUsd: Total item price in USD
+  - notes: Additional notes (or null to clear)
+  - pickupDate: ISO date string (or null to clear)
+  - status: Pickup status (DRAFT, CONFIRMED, CANCELLED)
+  - fxRateId: FX rate ID (or null to clear)
+
+  Status Flow:
+  DRAFT -> CONFIRMED (or CANCELLED at any point)
+
+  Returns 404 if not found or doesn't belong to the shipper.
+}

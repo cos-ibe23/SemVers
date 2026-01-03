@@ -1,0 +1,70 @@
+meta {
+  name: Submit Pickup Request
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/request/test-shipping-co
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "John Doe",
+    "email": "john@example.com",
+    "phoneCountryCode": "+1",
+    "phoneNumber": "5551234567",
+    "numberOfItems": 2,
+    "meetupLocation": "123 Main St, Los Angeles, CA",
+    "pickupTime": "2024-02-15T10:00:00Z",
+    "sellerMetadata": {
+      "name": "Bob Seller",
+      "phone": "+1-555-9876"
+    },
+    "agreedPrice": 850.00,
+    "itemDescription": "iPhone 15 Pro Max 256GB Blue, MacBook Air M2",
+    "links": "https://offerup.com/item/123, https://craigslist.org/item/456"
+  }
+}
+
+docs {
+  PUBLIC ENDPOINT - No authentication required.
+
+  Submit a pickup request to a shipper. This is the main entry point
+  for clients to request a pickup through a shipper's public form.
+
+  Path Parameters:
+  - slug: The shipper's request slug (e.g., "test-shipping-co")
+
+  Request Body:
+  REQUIRED:
+  - name: Client's name
+  - email: Client's email (used to create/find user account)
+  - numberOfItems: Number of items to pick up (minimum: 1)
+  - meetupLocation: Where to meet the seller
+  - pickupTime: ISO datetime string for pickup
+
+  OPTIONAL:
+  - phoneCountryCode: Client's phone country code
+  - phoneNumber: Client's phone number
+  - sellerMetadata: Object with seller info
+    - name: Seller's name
+    - phone: Seller's phone
+    - email: Seller's email
+    - address: Seller's address
+    - notes: Additional notes
+  - agreedPrice: Agreed price in USD
+  - itemDescription: Description of items
+  - links: Marketplace URLs (comma-separated)
+  - imeis: IMEI numbers (comma-separated)
+
+  Flow:
+  1. Looks up shipper by slug
+  2. Creates client user if email doesn't exist
+  3. Links client to shipper
+  4. Creates pickup request with status PENDING
+
+  Returns the created pickup request object.
+}

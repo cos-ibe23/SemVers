@@ -1,0 +1,35 @@
+meta {
+  name: Update FX Rate
+  type: http
+  seq: 5
+}
+
+patch {
+  url: {{baseUrl}}/v1/fx-rates/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+body:json {
+  {
+    "rate": "1650.00",
+    "isActive": true
+  }
+}
+
+docs {
+  Update an existing FX rate.
+
+  Path Parameters:
+  - id: The FX rate ID
+
+  Request Body (all optional):
+  - rate: New exchange rate (string or number)
+  - isActive: Whether the rate is active (boolean)
+
+  Returns 404 if not found or doesn't belong to the shipper.
+}

@@ -1,0 +1,48 @@
+meta {
+  name: Convert to Pickup
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/v1/pickup-requests/1/convert
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+body:json {
+  {
+    "fxRateId": 1,
+    "pickupFeeUsd": 25.00
+  }
+}
+
+docs {
+  Convert a pickup request to an actual pickup.
+
+  This is the key action that transitions a request into the pickup phase.
+  The request status will be set to CONVERTED and a new pickup record is created.
+
+  Path Parameters:
+  - id: The pickup request ID
+
+  Request Body (all optional):
+  - fxRateId: FX rate to use for the pickup (must belong to shipper)
+  - pickupFeeUsd: Pickup fee in USD
+
+  Validation:
+  - Request must have a linked clientUserId
+  - Request cannot already be CONVERTED
+
+  Returns:
+  - pickup: The created pickup object
+  - request: The updated pickup request (now with status CONVERTED)
+
+  After conversion:
+  - Use /v1/pickups/{id} endpoints to manage the pickup
+  - Use /v1/pickups/{id}/items to add items
+}

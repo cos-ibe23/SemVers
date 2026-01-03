@@ -1,0 +1,25 @@
+meta {
+  name: Get Item
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/v1/items/1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+docs {
+  Get a specific item by ID.
+
+  Path Parameters:
+  - id: The item ID
+
+  Returns the item object with all details.
+  Returns 404 if not found or doesn't belong to a shipper's pickup.
+}

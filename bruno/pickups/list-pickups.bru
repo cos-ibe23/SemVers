@@ -1,0 +1,39 @@
+meta {
+  name: List Pickups
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/pickups
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 1
+  limit: 20
+  ~status: DRAFT
+  ~clientId:
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+docs {
+  List all pickups for the authenticated shipper.
+
+  Query Parameters (all optional):
+  - page: Page number (default: 1)
+  - limit: Items per page (default: 20, max: 100)
+  - status: Filter by status (DRAFT, CONFIRMED, CANCELLED)
+  - clientId: Filter by client user ID
+
+  Returns paginated results:
+  - data: Array of pickup objects
+  - total: Total count
+  - page: Current page
+  - limit: Items per page
+  - hasMore: Whether more pages exist
+}

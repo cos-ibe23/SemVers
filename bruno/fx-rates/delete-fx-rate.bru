@@ -1,0 +1,25 @@
+meta {
+  name: Delete FX Rate
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/v1/fx-rates/1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+docs {
+  Delete an FX rate.
+
+  Path Parameters:
+  - id: The FX rate ID
+
+  Returns { success: true } on success.
+  Returns 404 if not found or doesn't belong to the shipper.
+}

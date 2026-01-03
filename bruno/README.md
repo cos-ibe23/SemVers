@@ -59,9 +59,15 @@ Shipper 2 (shipper-002) has these clients:
 
 ## Collections
 
+### Health
+- **Health Check** - Check API status
+
 ### Auth (`/auth`)
+- **Sign Up** - Create account with email
+- **Sign In** - Login with email
+- **Sign Out** - Logout
 - **Get Me** - Get current user + profile
-- **Get Profile** - Get shipper profile only
+- **Get Session** - Get session info
 - **Onboard Profile** - Complete onboarding (create profile)
 - **Update Profile** - Update shipper profile
 
@@ -73,8 +79,44 @@ Shipper 2 (shipper-002) has these clients:
 - **Update Shipper Client** - Update shipper-client relationship (nickname, phone)
 - **Remove Shipper Client** - Soft delete shipper-client relationship
 
-### Health
-- **Health Check** - Check API status
+### FX Rates (`/fx-rates`)
+Each shipper manages their own exchange rates for currency conversion.
+- **List FX Rates** - Get all FX rates for the shipper (filterable)
+- **Get Current FX Rate** - Get active rate for a currency pair
+- **Get FX Rate** - Get specific rate by ID
+- **Create FX Rate** - Create new rate (auto-deactivates previous for same pair)
+- **Update FX Rate** - Update rate or active status
+- **Delete FX Rate** - Delete a rate
+
+### Public Request (`/request`) - NO AUTH REQUIRED
+Public endpoints for clients to submit pickup requests.
+- **Get Shipper By Slug** - Get shipper's public info for the form
+- **Submit Pickup Request** - Submit a pickup request (auto-creates client user)
+
+### Pickup Requests (`/pickup-requests`)
+Shipper manages incoming pickup requests.
+- **List Pickup Requests** - Get paginated list (filterable by status, client, search)
+- **Get Pickup Request** - Get request by ID
+- **Create Pickup Request** - Create request (shipper-initiated)
+- **Update Pickup Request** - Update request status/details
+- **Delete Pickup Request** - Cancel/delete request
+- **Convert to Pickup** - Convert request to actual pickup
+
+### Pickups (`/pickups`)
+Manage actual pickups (from conversion or direct creation).
+- **List Pickups** - Get paginated list (filterable by status, client)
+- **Get Pickup** - Get pickup by ID
+- **Create Pickup** - Create pickup directly (for walk-in clients)
+- **Update Pickup** - Update pickup details/status
+- **Delete Pickup** - Cancel/delete pickup
+
+### Items (`/items`)
+Manage individual items within pickups.
+- **List Pickup Items** - Get all items in a pickup
+- **Add Item to Pickup** - Add item with category, model, IMEI, etc.
+- **Get Item** - Get item by ID
+- **Update Item** - Update item details/status
+- **Delete Item** - Remove item from pickup
 
 ## Authentication
 
@@ -96,4 +138,94 @@ The system has three roles:
 - Use the "local" environment when testing locally
 - The seed script creates test sessions that expire in 7 days
 - Run `npm run db:seed` again to refresh expired sessions
-- Client IDs are now string user IDs (e.g., "client-001"), not numeric IDs
+- Client IDs are now string user IDs (UUIDs), not numeric IDs
+
+## Complete Pickup Flow
+
+Here's the typical flow for a pickup request:
+
+```
+1. CLIENT visits imbod.com/request/{shipper-slug}
+   └─> GET /v1/request/test-shipping-co (public)
+       Returns shipper's business info for the form
+
+2. CLIENT submits pickup request
+   └─> POST /v1/request/test-shipping-co (public)
+       - Creates pickup_request (status: PENDING)
+       - Auto-creates client user if needed
+       - Links client to shipper
+
+3. SHIPPER reviews requests
+   └─> GET /v1/pickup-requests
+       Filter by status=PENDING
+
+4. SHIPPER provides quote
+   └─> PATCH /v1/pickup-requests/{id}
+       { "status": "QUOTED", "estimatedQuoteUsd": 850 }
+
+5. CLIENT pays (out-of-band) and proof is submitted
+   └─> PATCH /v1/pickup-requests/{id}
+       { "status": "PAYMENT_SUBMITTED" }
+
+6. ADMIN verifies payment
+   └─> PATCH /v1/pickup-requests/{id}
+       { "status": "PAYMENT_VERIFIED" }
+
+7. SHIPPER converts to pickup
+   └─> POST /v1/pickup-requests/{id}/convert
+       { "fxRateId": 1, "pickupFeeUsd": 25 }
+       - Creates pickup record
+       - Sets request status to CONVERTED
+
+8. SHIPPER picks up items from seller
+   └─> POST /v1/pickups/{id}/items
+       { "category": "Phone", "model": "iPhone 15 Pro", "imei": "..." }
+
+9. Track item through shipping
+   └─> PATCH /v1/items/{id}
+       { "status": "IN_BOX" }     -> Packed
+       { "status": "IN_TRANSIT" } -> Shipped
+       { "status": "DELIVERED" }  -> Arrived
+       { "status": "HANDED_OFF" } -> Client received
+```
+
+## Status Reference
+
+### Pickup Request Status
+| Status | Description |
+|--------|-------------|
+| PENDING | Client submitted, shipper hasn't reviewed |
+| QUOTED | Shipper provided estimate |
+| PAYMENT_SUBMITTED | Client uploaded payment proof |
+| PAYMENT_VERIFIED | Admin verified payment |
+| ACCEPTED | Ready to convert to pickup |
+| REJECTED | Request declined |
+| CONVERTED | Converted to a Pickup (immutable) |
+
+### Pickup Status
+| Status | Description |
+|--------|-------------|
+| DRAFT | Pickup created, not finalized |
+| CONFIRMED | Pickup confirmed, ready for processing |
+| CANCELLED | Pickup cancelled |
+
+### Item Status
+| Status | Description |
+|--------|-------------|
+| PENDING | Item picked up, in shipper's warehouse |
+| IN_BOX | Assigned to shipping box |
+| IN_TRANSIT | Box shipped, on the way |
+| DELIVERED | Arrived, awaiting client pickup |
+| HANDED_OFF | Client received item |
+| SOLD | Client sold the item (optional) |
+| RETURNED | Item was returned |
+
+## Currency Support
+
+The system supports multi-currency FX rates:
+- **USD** - US Dollar
+- **NGN** - Nigerian Naira
+- **GBP** - British Pound
+- **EUR** - Euro
+
+Each shipper sets their own rates. When a pickup is created/converted, the FX rate is snapshotted.

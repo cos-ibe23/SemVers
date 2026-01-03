@@ -1,0 +1,25 @@
+meta {
+  name: Delete Pickup
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{baseUrl}}/v1/pickups/1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+docs {
+  Delete/cancel a pickup.
+
+  Path Parameters:
+  - id: The pickup ID
+
+  Returns { success: true } on success.
+  Returns 404 if not found or doesn't belong to the shipper.
+}

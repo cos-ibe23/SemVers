@@ -1,0 +1,50 @@
+meta {
+  name: Update Pickup Request
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/v1/pickup-requests/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+body:json {
+  {
+    "status": "QUOTED",
+    "estimatedQuoteUsd": 950.00
+  }
+}
+
+docs {
+  Update a pickup request.
+
+  Path Parameters:
+  - id: The pickup request ID
+
+  Request Body (all optional):
+  - consumerName: Client's name
+  - consumerEmail: Client's email
+  - consumerPhone: Client's phone
+  - numberOfItems: Number of items
+  - meetupLocation: Meetup location
+  - pickupTime: ISO datetime string
+  - sellerMetadata: Seller info object (or null to clear)
+  - agreedPrice: Agreed price (or null to clear)
+  - itemDescription: Item description
+  - links: Marketplace URLs
+  - imeis: IMEI numbers
+  - status: Request status (see below)
+  - estimatedQuoteUsd: Shipper's quote in USD
+
+  Status Flow:
+  PENDING -> QUOTED -> PAYMENT_SUBMITTED -> PAYMENT_VERIFIED -> ACCEPTED -> CONVERTED
+                                                               (or REJECTED at any point)
+
+  Note: Cannot update a request with status CONVERTED.
+}

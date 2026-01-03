@@ -1,0 +1,42 @@
+meta {
+  name: List Pickup Requests
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/pickup-requests
+  body: none
+  auth: bearer
+}
+
+params:query {
+  page: 1
+  limit: 20
+  ~status: PENDING
+  ~clientId:
+  ~search:
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+docs {
+  List all pickup requests for the authenticated shipper.
+
+  Query Parameters (all optional):
+  - page: Page number (default: 1)
+  - limit: Items per page (default: 20, max: 100)
+  - status: Filter by status (PENDING, QUOTED, PAYMENT_SUBMITTED,
+            PAYMENT_VERIFIED, ACCEPTED, REJECTED, CONVERTED)
+  - clientId: Filter by client user ID
+  - search: Search in consumer name and email
+
+  Returns paginated results:
+  - data: Array of pickup request objects
+  - total: Total count
+  - page: Current page
+  - limit: Items per page
+  - hasMore: Whether more pages exist
+}

@@ -1,0 +1,25 @@
+meta {
+  name: List Pickup Items
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/pickups/1/items
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+docs {
+  List all items in a specific pickup.
+
+  Path Parameters:
+  - pickupId: The pickup ID
+
+  Returns an array of item objects.
+  Returns 404 if pickup not found or doesn't belong to the shipper.
+}

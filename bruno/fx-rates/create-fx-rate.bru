@@ -1,0 +1,40 @@
+meta {
+  name: Create FX Rate
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/v1/fx-rates
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+body:json {
+  {
+    "fromCurrency": "USD",
+    "toCurrency": "NGN",
+    "rate": "1600.00"
+  }
+}
+
+docs {
+  Create a new FX rate for the shipper.
+
+  When a new rate is created for a currency pair, the previous active
+  rate for that pair is automatically deactivated. Rate history is preserved.
+
+  Request Body:
+  - fromCurrency: Source currency (USD, NGN, GBP, EUR) - default: USD
+  - toCurrency: Target currency (USD, NGN, GBP, EUR) - default: NGN
+  - rate: Exchange rate (string or number)
+
+  Validation:
+  - fromCurrency and toCurrency cannot be the same
+
+  Returns the created FX rate object.
+}

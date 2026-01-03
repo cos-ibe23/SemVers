@@ -1,0 +1,56 @@
+meta {
+  name: Update Item
+  type: http
+  seq: 4
+}
+
+patch {
+  url: {{baseUrl}}/v1/items/1
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+body:json {
+  {
+    "imei": "987654321098765",
+    "imeiSource": "scanned",
+    "status": "IN_BOX"
+  }
+}
+
+docs {
+  Update an item.
+
+  Path Parameters:
+  - id: The item ID
+
+  Request Body (all optional):
+  - category: Item category
+  - model: Item model (or null to clear)
+  - imei: IMEI number (or null to clear)
+  - imeiSource: IMEI source (manual, scanned, api, or null)
+  - estimatedWeightLb: Weight in pounds
+  - clientShippingUsd: Shipping cost
+  - status: Item status
+
+  Item Status Flow:
+  PENDING -> IN_BOX -> IN_TRANSIT -> DELIVERED -> HANDED_OFF -> SOLD
+                                          |
+                                          v
+                                      RETURNED
+
+  Status Meanings:
+  - PENDING: Item picked up, in shipper's warehouse
+  - IN_BOX: Assigned to shipping box, ready to ship
+  - IN_TRANSIT: Box shipped, item on the way
+  - DELIVERED: Box arrived, awaiting client pickup
+  - HANDED_OFF: Client received item (pickup code used)
+  - SOLD: Client sold the item (optional tracking)
+  - RETURNED: Item was returned
+
+  Returns 404 if not found or doesn't belong to a shipper's pickup.
+}

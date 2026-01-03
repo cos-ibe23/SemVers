@@ -1,0 +1,32 @@
+meta {
+  name: List FX Rates
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/v1/fx-rates
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~fromCurrency: USD
+  ~toCurrency: NGN
+  ~activeOnly: true
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+docs {
+  List all FX rates for the authenticated shipper.
+
+  Query Parameters (all optional):
+  - fromCurrency: Filter by source currency (USD, NGN, GBP, EUR)
+  - toCurrency: Filter by target currency (USD, NGN, GBP, EUR)
+  - activeOnly: Only return active rates (true/false)
+
+  Returns an array of FX rate objects.
+}

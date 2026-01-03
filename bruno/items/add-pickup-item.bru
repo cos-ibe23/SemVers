@@ -1,0 +1,46 @@
+meta {
+  name: Add Item to Pickup
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/v1/pickups/1/items
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+body:json {
+  {
+    "category": "Phone",
+    "model": "iPhone 15 Pro Max 256GB Blue",
+    "imei": "123456789012345",
+    "imeiSource": "manual",
+    "estimatedWeightLb": 0.5,
+    "clientShippingUsd": 25.00
+  }
+}
+
+docs {
+  Add an item to a pickup.
+
+  Path Parameters:
+  - pickupId: The pickup ID
+
+  Request Body:
+  REQUIRED:
+  - category: Item category (e.g., "Phone", "Laptop", "Electronics")
+
+  OPTIONAL:
+  - model: Item model (e.g., "iPhone 15 Pro Max 256GB Blue")
+  - imei: Device IMEI number
+  - imeiSource: How IMEI was captured (manual, scanned, api)
+  - estimatedWeightLb: Estimated weight in pounds
+  - clientShippingUsd: Shipping cost charged to client
+
+  Returns the created item with status PENDING.
+}

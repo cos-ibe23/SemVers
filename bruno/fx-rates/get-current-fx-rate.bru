@@ -1,0 +1,30 @@
+meta {
+  name: Get Current FX Rate
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v1/fx-rates/current
+  body: none
+  auth: bearer
+}
+
+params:query {
+  fromCurrency: USD
+  toCurrency: NGN
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+docs {
+  Get the current active FX rate for a specific currency pair.
+
+  Query Parameters:
+  - fromCurrency: Source currency (default: USD)
+  - toCurrency: Target currency (default: NGN)
+
+  Returns the active FX rate or null if none exists.
+}

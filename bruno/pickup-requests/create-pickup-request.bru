@@ -1,0 +1,61 @@
+meta {
+  name: Create Pickup Request (Shipper)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/v1/pickup-requests
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+body:json {
+  {
+    "consumerName": "Jane Doe",
+    "consumerEmail": "jane@example.com",
+    "consumerPhone": "+15551234567",
+    "numberOfItems": 1,
+    "meetupLocation": "456 Oak Ave, San Francisco, CA",
+    "pickupTime": "2024-02-20T14:00:00Z",
+    "sellerMetadata": {
+      "name": "Mike Seller",
+      "phone": "+1-555-4321"
+    },
+    "agreedPrice": 1200.00,
+    "agreedPriceCurrency": "USD",
+    "itemDescription": "MacBook Pro 16\" M3 Max",
+    "links": "https://facebook.com/marketplace/item/789"
+  }
+}
+
+docs {
+  Create a pickup request (shipper-initiated).
+
+  Use this when a shipper is creating a request on behalf of a client,
+  rather than the client submitting through the public form.
+
+  Request Body:
+  REQUIRED:
+  - consumerName: Client's name
+  - numberOfItems: Number of items (minimum: 1)
+  - meetupLocation: Where to meet the seller
+  - pickupTime: ISO datetime string
+
+  OPTIONAL:
+  - clientUserId: Link to existing client user
+  - consumerEmail: Client's email
+  - consumerPhone: Client's phone
+  - sellerMetadata: Object with seller info
+  - agreedPrice: Agreed price
+  - agreedPriceCurrency: Currency (USD, NGN, GBP, EUR) - default: USD
+  - itemDescription: Description of items
+  - links: Marketplace URLs
+  - imeis: IMEI numbers
+
+  Returns the created pickup request with status PENDING.
+}

@@ -1,0 +1,24 @@
+meta {
+  name: Get Pickup Request
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v1/pickup-requests/1
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{shipperToken}}
+}
+
+docs {
+  Get a specific pickup request by ID.
+
+  Path Parameters:
+  - id: The pickup request ID
+
+  Returns 404 if not found or doesn't belong to the shipper.
+}

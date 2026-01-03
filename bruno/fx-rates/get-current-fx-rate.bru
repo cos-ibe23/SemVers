@@ -26,5 +26,13 @@ docs {
   - fromCurrency: Source currency (default: USD)
   - toCurrency: Target currency (default: NGN)
 
-  Returns the active FX rate or null if none exists.
+  Response includes:
+  - id: Rate ID
+  - fromCurrency, toCurrency: Currency pair
+  - costRate: What shipper pays (internal)
+  - clientRate: What client pays (public)
+  - isActive: true (always, since this returns the active rate)
+  - createdAt, updatedAt: Timestamps
+
+  Returns the active FX rate or null if none exists for the pair.
 }

@@ -28,5 +28,13 @@ docs {
   - toCurrency: Filter by target currency (USD, NGN, GBP, EUR)
   - activeOnly: Only return active rates (true/false)
 
+  Each rate includes:
+  - id: Rate ID
+  - fromCurrency, toCurrency: Currency pair
+  - costRate: What shipper pays (internal)
+  - clientRate: What client pays (public)
+  - isActive: Whether this is the current active rate
+  - createdAt, updatedAt: Timestamps
+
   Returns an array of FX rate objects.
 }

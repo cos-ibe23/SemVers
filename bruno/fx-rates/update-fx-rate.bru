@@ -20,7 +20,8 @@ auth:bearer {
 
 body:json {
   {
-    "rate": "1650.00",
+    "costRate": "1520.00",
+    "clientRate": "1580.00",
     "isActive": true
   }
 }
@@ -32,8 +33,12 @@ docs {
   - id: The FX rate ID
 
   Request Body (all optional):
-  - rate: New exchange rate (string or number)
+  - costRate: New cost rate (what shipper pays)
+  - clientRate: New client rate (what client pays)
   - isActive: Whether the rate is active (boolean)
+
+  Note: Updating rates is typically for corrections. To set a new rate,
+  prefer creating a new FX rate (which auto-deactivates the old one).
 
   Returns 404 if not found or doesn't belong to the shipper.
 }

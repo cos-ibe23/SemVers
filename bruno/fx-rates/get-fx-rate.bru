@@ -24,5 +24,13 @@ docs {
   Path Parameters:
   - id: The FX rate ID
 
+  Response includes:
+  - id: Rate ID
+  - fromCurrency, toCurrency: Currency pair
+  - costRate: What shipper pays (internal)
+  - clientRate: What client pays (public)
+  - isActive: Whether this is the current active rate
+  - createdAt, updatedAt: Timestamps
+
   Returns 404 if not found or doesn't belong to the shipper.
 }

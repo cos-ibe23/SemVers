@@ -18,7 +18,8 @@ body:json {
   {
     "fromCurrency": "USD",
     "toCurrency": "NGN",
-    "rate": "1600.00"
+    "costRate": "1500.00",
+    "clientRate": "1550.00"
   }
 }
 
@@ -31,10 +32,16 @@ docs {
   Request Body:
   - fromCurrency: Source currency (USD, NGN, GBP, EUR) - default: USD
   - toCurrency: Target currency (USD, NGN, GBP, EUR) - default: NGN
-  - rate: Exchange rate (string or number)
+  - costRate: What shipper pays to acquire currency (internal/private)
+  - clientRate: What shipper charges clients (public-facing)
+
+  Example:
+  - costRate: 1500 (shipper buys USD at 1500 NGN)
+  - clientRate: 1550 (shipper sells to client at 1550 NGN)
+  - Margin: 50 NGN per USD (shipper's profit)
 
   Validation:
   - fromCurrency and toCurrency cannot be the same
 
-  Returns the created FX rate object.
+  Returns the created FX rate object with both rates.
 }

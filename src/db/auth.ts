@@ -93,6 +93,22 @@ export const auth = betterAuth({
                 defaultValue: false,
                 input: false, // Cannot be set by user during signup
             },
+            // Business/onboarding fields - returned in sign-in response for frontend context
+            onboardedAt: {
+                type: 'date',
+                input: false,
+                returned: true,
+            },
+            businessName: {
+                type: 'string',
+                input: false,
+                returned: true,
+            },
+            requestSlug: {
+                type: 'string',
+                input: false,
+                returned: true,
+            },
         },
     },
 
@@ -137,11 +153,14 @@ export const auth = betterAuth({
                 });
             }
 
-            // Return user with isSystemUser flag for permission checks
+            // Return user with additional fields for frontend context
             return {
                 user: {
                     ...userFromSession,
                     isSystemUser: u.isSystemUser,
+                    onboardedAt: u.onboardedAt,
+                    businessName: u.businessName,
+                    requestSlug: u.requestSlug,
                 },
                 session,
             };

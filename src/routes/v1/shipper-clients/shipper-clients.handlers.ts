@@ -46,6 +46,8 @@ export const addClient: AppRouteHandler<AddClientRoute> = async (c) => {
             : await service.createAndAddClient({
                   name: body.name!,
                   email: body.email!,
+                  phoneCountryCode: body.phoneCountryCode,
+                  phoneNumber: body.phoneNumber,
                   nickname: body.nickname,
                   phone: body.phone,
               });

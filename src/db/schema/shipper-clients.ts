@@ -39,6 +39,8 @@ export const clientUserResponseSchema = z.object({
     name: z.string(),
     email: z.string(),
     image: z.string().nullable(),
+    phoneCountryCode: z.string().nullable(),
+    phoneNumber: z.string().nullable(),
 });
 
 // Response schema for shipper-client with nested user
@@ -59,8 +61,12 @@ export const addClientRequestSchema = z
         clientUserId: z.string().optional(),
         name: z.string().min(1).max(255).optional(),
         email: z.string().email().optional(),
+        // Phone fields for client's primary contact info (stored on user)
+        phoneCountryCode: z.string().max(10).optional(),
+        phoneNumber: z.string().max(20).optional(),
+        // Shipper-specific fields (stored on junction table)
         nickname: z.string().max(255).optional(),
-        phone: z.string().max(50).optional(),
+        phone: z.string().max(50).optional(), // Shipper-specific phone override
     })
     .refine((data) => data.clientUserId || (data.name && data.email), {
         message: 'Either clientUserId or both name and email are required',

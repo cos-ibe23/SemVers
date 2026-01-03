@@ -18,6 +18,10 @@ export interface AddClientInput {
 export interface CreateAndAddClientInput {
     name: string;
     email: string;
+    // Client's primary contact info (stored on user)
+    phoneCountryCode?: string | null;
+    phoneNumber?: string | null;
+    // Shipper-specific fields (stored on junction table)
     nickname?: string | null;
     phone?: string | null;
 }
@@ -45,6 +49,8 @@ export interface ShipperClientWithUser {
         name: string;
         email: string;
         image: string | null;
+        phoneCountryCode: string | null;
+        phoneNumber: string | null;
     };
 }
 
@@ -135,6 +141,8 @@ export class ShipperClientService extends Service {
                 email: input.email,
                 emailVerified: false,
                 role: UserRoles.CLIENT,
+                phoneCountryCode: input.phoneCountryCode ?? null,
+                phoneNumber: input.phoneNumber ?? null,
             });
 
             await this.db.insert(shipperClients).values({
@@ -220,6 +228,8 @@ export class ShipperClientService extends Service {
                         name: user.name,
                         email: user.email,
                         image: user.image,
+                        phoneCountryCode: user.phoneCountryCode,
+                        phoneNumber: user.phoneNumber,
                     },
                 })
                 .from(shipperClients)
@@ -355,6 +365,8 @@ export class ShipperClientService extends Service {
                     name: user.name,
                     email: user.email,
                     image: user.image,
+                    phoneCountryCode: user.phoneCountryCode,
+                    phoneNumber: user.phoneNumber,
                 },
             })
             .from(shipperClients)

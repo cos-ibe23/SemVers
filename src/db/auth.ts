@@ -20,12 +20,20 @@ export const auth = betterAuth({
     baseURL: env.BETTER_AUTH_URL || 'http://localhost:4000',
     basePath: '/v1/auth',
     secret: env.BETTER_AUTH_SECRET,
-    trustedOrigins: [
-        'http://localhost:4000',
-        'http://localhost:3000',
-        'http://127.0.0.1:4000',
-        'http://127.0.0.1:3000',
-    ],
+    trustedOrigins:
+        env.NODE_ENV === 'production'
+            ? [
+                  // Production domains - add your actual domains
+                  // Parse comma-separated origins from environment variable
+                  ...(env.ALLOWED_ORIGINS?.split(',').map((origin) => origin.trim()) || []),
+              ]
+            : [
+                  // Development origins
+                  'http://localhost:4000',
+                  'http://localhost:3000',
+                  'http://127.0.0.1:4000',
+                  'http://127.0.0.1:3000',
+              ],
     advanced: {
         // Custom cookie configuration
         cookies: {

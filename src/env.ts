@@ -36,6 +36,12 @@ const EnvSchema = z.object({
     S3_SECRET_KEY: z.string().min(1),
     S3_BUCKET: z.string().min(1),
     S3_REGION: z.string().default('us-east-1'),
+
+    // Production origins (comma-separated list)
+    ALLOWED_ORIGINS: z.string().optional(),
+
+    // Mobile API key (for API clients that don't send Origin header)
+    MOBILE_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

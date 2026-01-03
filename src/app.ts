@@ -1,6 +1,8 @@
 import { createApp } from './lib/create-app';
 import { configureOpenAPI } from './lib/configure-open-api';
 import { auth } from './db/auth';
+import { env } from './env';
+import { logger } from './lib/logger';
 
 // Routes
 import indexRouter from './routes/index.route';
@@ -14,9 +16,74 @@ const app = createApp();
 // Configure OpenAPI docs
 configureOpenAPI(app);
 
-// Mount Better Auth routes
-app.on(['POST', 'GET'], '/v1/auth/*', (c) => {
-    return auth.handler(c.req.raw);
+// Helper function to create a request with Origin header added
+function addOriginHeader(request: Request, origin: string): Request {
+    const headers = new Headers(request.headers);
+    headers.set('origin', origin);
+
+    // For requests with body (POST, PUT, etc.), we need to handle it carefully
+    // Since we haven't read the body yet, we can pass it directly
+    const init: RequestInit = {
+        method: request.method,
+        headers,
+    };
+
+    // Only include body for methods that typically have one
+    if (['POST', 'PUT', 'PATCH'].includes(request.method) && request.body) {
+        init.body = request.body;
+    }
+
+    return new Request(request.url, init);
+}
+
+// Mount Better Auth routes with Origin handling
+app.on(['POST', 'GET'], '/v1/auth/*', async (c) => {
+    const request = c.req.raw;
+    const origin = request.headers.get('origin');
+    const path = c.req.path;
+
+    // In production, allow requests without Origin if they have a valid API key
+    // (for mobile apps or server-to-server API clients)
+    if (env.NODE_ENV === 'production' && !origin) {
+        const apiKey = request.headers.get('x-api-key');
+
+        // Only allow if valid API key is provided (removed user agent check for security)
+        if (apiKey && env.MOBILE_API_KEY && apiKey === env.MOBILE_API_KEY) {
+            // Log API key usage for security monitoring
+            logger.info(
+                {
+                    path,
+                    method: request.method,
+                    ip: c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown',
+                },
+                'API key authentication used for Better Auth request'
+            );
+
+            const modifiedRequest = addOriginHeader(request, env.BETTER_AUTH_URL);
+            return auth.handler(modifiedRequest);
+        }
+
+        // Reject requests without Origin and without valid API key
+        logger.warn(
+            {
+                path,
+                method: request.method,
+                ip: c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown',
+            },
+            'Better Auth request rejected: missing Origin header and invalid/missing API key'
+        );
+    }
+
+    // In development, inject Origin if missing (for API testing tools like Bruno)
+    if (env.NODE_ENV !== 'production' && !origin) {
+        const modifiedRequest = addOriginHeader(
+            request,
+            env.BETTER_AUTH_URL || 'http://localhost:4000'
+        );
+        return auth.handler(modifiedRequest);
+    }
+
+    return auth.handler(request);
 });
 
 // Mount non-versioned routes

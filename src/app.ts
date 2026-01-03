@@ -43,8 +43,16 @@ app.on(['POST', 'GET', 'PATCH'], '/v1/auth/*', async (c, next) => {
     // Skip custom routes - these are handled by the custom auth router
     const customRoutes = ['/v1/auth/me', '/v1/auth/onboard', '/v1/auth/profile'];
     if (customRoutes.includes(path)) {
-        // Let the request fall through to the custom routes
         return next();
+    }
+
+    // Block /session route - use /me instead
+    if (path === '/v1/auth/session') {
+        return c.json({
+            error: 'Use /v1/auth/me to get session info',
+            statusCode: 404,
+            statusPhrase: 'Not Found',
+        }, 404);
     }
 
     // Handle Better Auth built-in routes (sign-in, sign-up, sign-out, session, etc.)

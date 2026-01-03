@@ -1,4 +1,5 @@
 import { getReasonPhrase } from 'http-status-codes';
+import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { ApiError } from './api-error';
 
 export { ApiError } from './api-error';
@@ -6,7 +7,7 @@ export { ApiError } from './api-error';
 export class UnauthorizedError extends ApiError {
     constructor(message = 'Unauthorized') {
         super(message, {
-            statusCode: 401,
+            statusCode: 401 as ContentfulStatusCode,
             statusPhrase: getReasonPhrase(401),
         });
         this.name = 'UnauthorizedError';
@@ -16,7 +17,7 @@ export class UnauthorizedError extends ApiError {
 export class ForbiddenError extends ApiError {
     constructor(message = 'Forbidden') {
         super(message, {
-            statusCode: 403,
+            statusCode: 403 as ContentfulStatusCode,
             statusPhrase: getReasonPhrase(403),
         });
         this.name = 'ForbiddenError';
@@ -26,7 +27,7 @@ export class ForbiddenError extends ApiError {
 export class NotFoundError extends ApiError {
     constructor(message = 'Not found') {
         super(message, {
-            statusCode: 404,
+            statusCode: 404 as ContentfulStatusCode,
             statusPhrase: getReasonPhrase(404),
         });
         this.name = 'NotFoundError';
@@ -36,7 +37,7 @@ export class NotFoundError extends ApiError {
 export class ConflictError extends ApiError {
     constructor(message = 'Conflict') {
         super(message, {
-            statusCode: 409,
+            statusCode: 409 as ContentfulStatusCode,
             statusPhrase: getReasonPhrase(409),
         });
         this.name = 'ConflictError';
@@ -46,7 +47,7 @@ export class ConflictError extends ApiError {
 export class UnprocessableError extends ApiError {
     constructor(message = 'Unprocessable entity', errors?: Record<string, string[]>) {
         super(message, {
-            statusCode: 422,
+            statusCode: 422 as ContentfulStatusCode,
             statusPhrase: getReasonPhrase(422),
             errors,
         });
@@ -57,7 +58,7 @@ export class UnprocessableError extends ApiError {
 export class BadRequestError extends ApiError {
     constructor(message = 'Bad request') {
         super(message, {
-            statusCode: 400,
+            statusCode: 400 as ContentfulStatusCode,
             statusPhrase: getReasonPhrase(400),
         });
         this.name = 'BadRequestError';
@@ -67,7 +68,7 @@ export class BadRequestError extends ApiError {
 export class ServerError extends ApiError {
     constructor(message = 'Internal server error', options?: { metadata?: Record<string, unknown> }) {
         super(message, {
-            statusCode: 500,
+            statusCode: 500 as ContentfulStatusCode,
             statusPhrase: getReasonPhrase(500),
             metadata: options?.metadata,
         });

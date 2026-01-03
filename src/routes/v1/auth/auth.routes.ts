@@ -9,18 +9,8 @@ import {
     updateProfileRequestSchema,
 } from '../../../db/schema/auth';
 
-// Multipart form schema for onboarding (supports file upload)
-const onboardMultipartSchema = z.object({
-    businessName: z.string().min(1).max(255),
-    logoUrl: z.string().url().max(512).optional(),
-    logoFile: z.instanceof(File).optional(),
-    street: z.string().max(255).optional(),
-    city: z.string().max(100).optional(),
-    state: z.string().max(100).optional(),
-    country: z.string().max(100).optional(),
-    phoneCountryCode: z.string().max(10).optional(),
-    phoneNumber: z.string().max(20).optional(),
-});
+// Note: Multipart form data with file uploads will be handled manually in the handler
+// when S3 storage is configured. For now, we only validate JSON requests.
 
 // Tag for all auth routes
 const TAGS = ['v1-auth'] as const;
@@ -46,25 +36,15 @@ export const getMe = createRoute({
 });
 
 // POST /v1/auth/onboard - Complete shipper onboarding
-// Supports both JSON (with logoUrl) and multipart/form-data (with logoFile)
+// Note: Multipart form data with file uploads is handled manually in the handler
+// when S3 storage is configured. OpenAPI schema only documents JSON for now.
 export const onboard = createRoute({
     middleware: [authenticated],
     tags: [...TAGS],
     method: 'post',
     path: '/auth/onboard',
     request: {
-        body: {
-            content: {
-                'application/json': {
-                    schema: onboardRequestSchema,
-                },
-                'multipart/form-data': {
-                    schema: onboardMultipartSchema,
-                },
-            },
-            description: 'Onboarding data. Can send logoUrl (string) or logoFile (file upload)',
-            required: true,
-        },
+        body: jsonContent(onboardRequestSchema, 'Onboarding data with optional logoUrl'),
     },
     responses: {
         [HttpStatusCodes.OK]: jsonContent(userResponseSchema, 'User with business fields set'),

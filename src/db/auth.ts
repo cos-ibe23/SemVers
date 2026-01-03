@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { customSession } from 'better-auth/plugins';
+import { bearer, customSession } from 'better-auth/plugins';
 import { eq } from 'drizzle-orm';
 import { db } from './index';
 import { env } from '../env';
@@ -105,6 +105,9 @@ export const auth = betterAuth({
         },
     },
     plugins: [
+        // Enable Bearer token authentication for API clients (Bruno, mobile apps, etc.)
+        // After sign-in, token is returned in 'set-auth-token' response header
+        bearer(),
         customSession(async ({ user: userFromSession, session }) => {
             // Fetch full user from database to get isSystemUser flag
                     const [u] = await db

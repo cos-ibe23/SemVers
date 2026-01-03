@@ -73,13 +73,13 @@ export type SessionResponse = z.infer<typeof sessionResponseSchema>;
 // Request schemas for auth endpoints
 export const onboardRequestSchema = z.object({
     businessName: z.string().min(1).max(255),
-    logoUrl: z.string().url().max(512).optional(),
-    street: z.string().max(255).optional(),
-    city: z.string().max(100).optional(),
-    state: z.string().max(100).optional(),
-    country: z.string().max(100).optional(),
-    phoneCountryCode: z.string().max(10).optional(),
-    phoneNumber: z.string().max(20).optional(),
+    logoUrl: z.string().url().max(512).optional().nullable(),
+    street: z.string().max(255).optional().nullable(),
+    city: z.string().max(100).optional().nullable(),
+    state: z.string().max(100).optional().nullable(),
+    country: z.string().max(100).optional().nullable(),
+    phoneCountryCode: z.string().max(10).optional().nullable(),
+    phoneNumber: z.string().max(20).optional().nullable(),
 });
 
 export const updateProfileRequestSchema = z.object({

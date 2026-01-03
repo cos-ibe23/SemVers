@@ -1,5 +1,5 @@
 import { AuthService } from '../../../services';
-import { ApiError } from '../../../lib/errors';
+import { ApiError, BadRequestError } from '../../../lib/errors';
 import * as HttpStatusCodes from '../../../lib/http-status-codes';
 import { handleLogoUpload } from '../../../lib/upload-helper';
 import type { AppRouteHandler } from '../../../lib/types';
@@ -58,24 +58,12 @@ export const onboard: AppRouteHandler<OnboardRoute> = async (c) => {
             const logoUrl = formData.get('logoUrl') as string | null;
 
             if (!businessName) {
-                throw new ApiError('businessName is required', {
-                    statusCode: HttpStatusCodes.BAD_REQUEST,
-                    statusPhrase: 'Bad Request',
-                });
+                throw new BadRequestError('businessName is required');
             }
 
-            // Enforce: multipart/form-data must include a file
-            if (!logoFile || logoFile.size === 0) {
-                throw new ApiError(
-                    'When using multipart/form-data, logoFile must be provided. Use application/json with logoUrl instead if you only want to provide a URL.',
-                    {
-                        statusCode: HttpStatusCodes.BAD_REQUEST,
-                        statusPhrase: 'Bad Request',
-                    }
-                );
-            }
-
-            // Use decoupled upload helper
+            // File upload is optional - use handleLogoUpload which handles both file and URL
+            // If file provided and S3 configured, it will upload
+            // If no file or S3 not configured, falls back to logoUrl
             const finalLogoUrl = await handleLogoUpload(logoFile, logoUrl, c);
 
             onboardData = {
@@ -90,17 +78,12 @@ export const onboard: AppRouteHandler<OnboardRoute> = async (c) => {
             };
         } else {
             // Handle JSON (existing behavior)
-            // Enforce: JSON should not contain file references
             const jsonData = c.req.valid('json');
-            
+
             // Validate that JSON doesn't contain file-like data
             if (jsonData && typeof jsonData === 'object' && 'logoFile' in jsonData) {
-                throw new ApiError(
-                    'Cannot send logoFile in JSON. Use multipart/form-data for file uploads, or use logoUrl (string) instead.',
-                    {
-                        statusCode: HttpStatusCodes.BAD_REQUEST,
-                        statusPhrase: 'Bad Request',
-                    }
+                throw new BadRequestError(
+                    'Cannot send logoFile in JSON. Use multipart/form-data for file uploads, or use logoUrl (string) instead.'
                 );
             }
 

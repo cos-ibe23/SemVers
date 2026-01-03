@@ -37,14 +37,14 @@ function addOriginHeader(request: Request, origin: string): Request {
 }
 
 // Mount Better Auth routes with Origin handling
-app.on(['POST', 'GET'], '/v1/auth/*', async (c) => {
+app.on(['POST', 'GET', 'PATCH'], '/v1/auth/*', async (c, next) => {
     const path = c.req.path;
 
     // Skip custom routes - these are handled by the custom auth router
     const customRoutes = ['/v1/auth/me', '/v1/auth/onboard', '/v1/auth/profile'];
     if (customRoutes.includes(path)) {
         // Let the request fall through to the custom routes
-        return;
+        return next();
     }
 
     // Handle Better Auth built-in routes (sign-in, sign-up, sign-out, session, etc.)

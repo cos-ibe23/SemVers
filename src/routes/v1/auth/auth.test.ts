@@ -189,7 +189,7 @@ describe('Auth Routes', () => {
 
             expect(response.status).toBe(400);
             const body = await response.json();
-            expect(body.error).toContain('Only shippers');
+            expect(body.error).toContain('permission to complete onboarding');
         });
     });
 

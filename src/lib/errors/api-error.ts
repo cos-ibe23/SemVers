@@ -22,7 +22,11 @@ export class ApiError extends Error {
     constructor(message: string, opts: Partial<ApiErrorOptions> = {}) {
         super(message);
         this.name = 'ApiError';
-        this.statusCode = (opts.statusCode ?? StatusCodes.INTERNAL_SERVER_ERROR) as ContentfulStatusCode;
+        // Ensure status code is always a valid number in range 200-599
+        const rawStatusCode = opts.statusCode ?? StatusCodes.INTERNAL_SERVER_ERROR;
+        this.statusCode = (typeof rawStatusCode === 'number' && rawStatusCode >= 200 && rawStatusCode <= 599
+            ? rawStatusCode
+            : StatusCodes.INTERNAL_SERVER_ERROR) as ContentfulStatusCode;
         this.statusPhrase = opts.statusPhrase ?? getReasonPhrase(this.statusCode);
         this.errors = opts.errors ?? {};
         this.metadata = opts.metadata ?? {};
@@ -44,20 +48,20 @@ export class ApiError extends Error {
                 fieldErrors[path].push(issue.message);
             }
             return new ApiError('Validation failed', {
-                statusCode: 422,
+                statusCode: 422 as ContentfulStatusCode,
                 errors: fieldErrors,
             });
         }
 
         if (error instanceof Error) {
             return new ApiError(error.message, {
-                statusCode: 500,
+                statusCode: 500 as ContentfulStatusCode,
                 metadata: { originalError: error.name },
             });
         }
 
         return new ApiError('An unexpected error occurred', {
-            statusCode: 500,
+            statusCode: 500 as ContentfulStatusCode,
         });
     }
 

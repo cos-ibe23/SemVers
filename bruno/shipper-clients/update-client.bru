@@ -5,9 +5,13 @@ meta {
 }
 
 patch {
-  url: {{baseUrl}}/v1/shipper-clients/client-001
+  url: {{baseUrl}}/v1/shipper-clients/:clientId
   body: json
   auth: bearer
+}
+
+params:path {
+  clientId: {{clientId}}
 }
 
 auth:bearer {

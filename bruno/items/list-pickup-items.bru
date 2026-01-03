@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/v1/pickups/1/items
+  url: {{baseUrl}}/v1/pickups/:pickupId/items
   body: none
   auth: bearer
+}
+
+params:path {
+  pickupId: 1
 }
 
 auth:bearer {

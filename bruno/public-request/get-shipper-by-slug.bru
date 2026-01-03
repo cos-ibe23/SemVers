@@ -5,9 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/v1/request/test-shipping-co
+  url: {{baseUrl}}/v1/request/:slug
   body: none
   auth: none
+}
+
+params:path {
+  slug: {{shipperSlug}}
 }
 
 docs {

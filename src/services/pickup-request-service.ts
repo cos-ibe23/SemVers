@@ -10,23 +10,7 @@ import {
 import { ApiError, ForbiddenError, NotFoundError, BadRequestError } from '../lib/errors';
 import { Resources } from '../lib/user-can';
 import { Service, type ServiceOptions } from './service';
-import { PickupRequestStatus, PaymentStatus, type CurrencyType } from '../constants/enums';
-
-export interface CreatePickupRequestInput {
-    clientUserId?: string;
-    consumerName: string;
-    consumerEmail?: string;
-    consumerPhone?: string;
-    numberOfItems: number;
-    meetupLocation: string;
-    pickupTime: string;
-    sellerMetadata?: SellerMetadata;
-    agreedPrice?: number;
-    agreedPriceCurrency?: CurrencyType;
-    itemDescription?: string;
-    links?: string;
-    imeis?: string;
-}
+import { PickupRequestStatus } from '../constants/enums';
 
 export interface UpdatePickupRequestInput {
     consumerName?: string;
@@ -68,49 +52,6 @@ export interface ConvertToPickupInput {
 export class PickupRequestService extends Service {
     constructor(options: ServiceOptions = {}) {
         super(options);
-    }
-
-    /**
-     * Create a pickup request (shipper-initiated).
-     */
-    public async create(input: CreatePickupRequestInput): Promise<PickupRequestResponse> {
-        try {
-            const shipperUserId = this.requireUserId();
-
-            if (!this.userCan.canCreate(Resources.PICKUP_REQUESTS)) {
-                throw new ForbiddenError('You are not authorized to create pickup requests');
-            }
-
-            const [request] = await this.db
-                .insert(pickupRequests)
-                .values({
-                    shipperUserId,
-                    clientUserId: input.clientUserId || null,
-                    consumerName: input.consumerName,
-                    consumerEmail: input.consumerEmail || null,
-                    consumerPhone: input.consumerPhone || null,
-                    numberOfItems: input.numberOfItems,
-                    meetupLocation: input.meetupLocation,
-                    pickupTime: new Date(input.pickupTime),
-                    sellerMetadata: input.sellerMetadata || null,
-                    agreedPrice: input.agreedPrice?.toString() || null,
-                    agreedPriceCurrency: input.agreedPriceCurrency || 'USD',
-                    itemDescription: input.itemDescription || null,
-                    links: input.links || null,
-                    imeis: input.imeis || null,
-                    status: PickupRequestStatus.PENDING,
-                    paymentStatus: PaymentStatus.UNPAID,
-                })
-                .returning();
-
-            this.log('pickup_request_create', { requestId: request.id });
-
-            return pickupRequestResponseSchema.parse(request);
-        } catch (error) {
-            const apiError = ApiError.parse(error);
-            apiError.log({ method: 'PickupRequestService.create' });
-            throw apiError;
-        }
     }
 
     /**

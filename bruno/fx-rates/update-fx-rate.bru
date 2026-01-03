@@ -5,9 +5,13 @@ meta {
 }
 
 patch {
-  url: {{baseUrl}}/v1/fx-rates/1
+  url: {{baseUrl}}/v1/fx-rates/:id
   body: json
   auth: bearer
+}
+
+params:path {
+  id: 1
 }
 
 auth:bearer {

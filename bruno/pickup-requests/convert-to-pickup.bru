@@ -5,9 +5,13 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/v1/pickup-requests/1/convert
+  url: {{baseUrl}}/v1/pickup-requests/:id/convert
   body: json
   auth: bearer
+}
+
+params:path {
+  id: 1
 }
 
 auth:bearer {

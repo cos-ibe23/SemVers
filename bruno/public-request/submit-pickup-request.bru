@@ -5,9 +5,13 @@ meta {
 }
 
 post {
-  url: {{baseUrl}}/v1/request/test-shipping-co
+  url: {{baseUrl}}/v1/request/:slug
   body: json
   auth: none
+}
+
+params:path {
+  slug: {{shipperSlug}}
 }
 
 body:json {

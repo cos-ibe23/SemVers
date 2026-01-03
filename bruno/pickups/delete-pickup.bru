@@ -5,9 +5,13 @@ meta {
 }
 
 delete {
-  url: {{baseUrl}}/v1/pickups/1
+  url: {{baseUrl}}/v1/pickups/:id
   body: none
   auth: bearer
+}
+
+params:path {
+  id: 1
 }
 
 auth:bearer {

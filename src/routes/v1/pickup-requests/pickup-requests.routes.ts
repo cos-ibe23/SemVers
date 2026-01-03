@@ -9,7 +9,6 @@ import {
 } from '../../../lib/openapi/helpers';
 import {
     pickupRequestResponseSchema,
-    createPickupRequestShipperSchema,
     updatePickupRequestSchema,
 } from '../../../db/schema/pickup-requests';
 import { pickupResponseSchema } from '../../../db/schema/pickups';
@@ -59,23 +58,6 @@ export const getPickupRequest = createRoute({
         [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('Unauthorized'),
         [HttpStatusCodes.FORBIDDEN]: jsonApiErrorContent('Forbidden'),
         [HttpStatusCodes.NOT_FOUND]: jsonApiErrorContent('Pickup request not found'),
-        [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('Internal server error'),
-    },
-});
-
-export const createPickupRequest = createRoute({
-    middleware: [authenticated],
-    tags: [...TAGS],
-    method: 'post',
-    path: '/pickup-requests',
-    request: {
-        body: jsonContentRequired(createPickupRequestShipperSchema, 'Create pickup request'),
-    },
-    responses: {
-        [HttpStatusCodes.CREATED]: jsonContent(pickupRequestResponseSchema, 'Pickup request created'),
-        [HttpStatusCodes.BAD_REQUEST]: jsonApiErrorContent('Bad request'),
-        [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('Unauthorized'),
-        [HttpStatusCodes.FORBIDDEN]: jsonApiErrorContent('Forbidden'),
         [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('Internal server error'),
     },
 });
@@ -154,7 +136,6 @@ export const convertToPickup = createRoute({
 
 export type ListPickupRequestsRoute = typeof listPickupRequests;
 export type GetPickupRequestRoute = typeof getPickupRequest;
-export type CreatePickupRequestRoute = typeof createPickupRequest;
 export type UpdatePickupRequestRoute = typeof updatePickupRequest;
 export type DeletePickupRequestRoute = typeof deletePickupRequest;
 export type ConvertToPickupRoute = typeof convertToPickup;

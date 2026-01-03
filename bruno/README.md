@@ -94,13 +94,14 @@ Public endpoints for clients to submit pickup requests.
 - **Submit Pickup Request** - Submit a pickup request (auto-creates client user)
 
 ### Pickup Requests (`/pickup-requests`)
-Shipper manages incoming pickup requests.
+Shipper manages incoming pickup requests (created via public `/request/:slug` endpoint).
 - **List Pickup Requests** - Get paginated list (filterable by status, client, search)
 - **Get Pickup Request** - Get request by ID
-- **Create Pickup Request** - Create request (shipper-initiated)
-- **Update Pickup Request** - Update request status/details
+- **Update Pickup Request** - Update request status/details (quote, accept, etc.)
 - **Delete Pickup Request** - Cancel/delete request
 - **Convert to Pickup** - Convert request to actual pickup
+
+> **Note:** Pickup requests are created by clients via the public endpoint. Shippers who want to create a pickup directly (walk-in, phone call) should use `POST /v1/pickups` instead.
 
 ### Pickups (`/pickups`)
 Manage actual pickups (from conversion or direct creation).

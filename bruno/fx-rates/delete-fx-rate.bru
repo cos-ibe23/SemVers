@@ -5,9 +5,13 @@ meta {
 }
 
 delete {
-  url: {{baseUrl}}/v1/fx-rates/1
+  url: {{baseUrl}}/v1/fx-rates/:id
   body: none
   auth: bearer
+}
+
+params:path {
+  id: 1
 }
 
 auth:bearer {

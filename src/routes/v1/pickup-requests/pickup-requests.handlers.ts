@@ -5,7 +5,6 @@ import type { AppRouteHandler } from '../../../lib/types';
 import type {
     ListPickupRequestsRoute,
     GetPickupRequestRoute,
-    CreatePickupRequestRoute,
     UpdatePickupRequestRoute,
     DeletePickupRequestRoute,
     ConvertToPickupRoute,
@@ -51,30 +50,6 @@ export const getPickupRequest: AppRouteHandler<GetPickupRequestRoute> = async (c
                 return c.json(apiError.toResponseError(), HttpStatusCodes.FORBIDDEN);
             case HttpStatusCodes.NOT_FOUND:
                 return c.json(apiError.toResponseError(), HttpStatusCodes.NOT_FOUND);
-            default:
-                return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
-        }
-    }
-};
-
-export const createPickupRequest: AppRouteHandler<CreatePickupRequestRoute> = async (c) => {
-    try {
-        const body = c.req.valid('json');
-        const service = new PickupRequestService({ context: c });
-        const result = await service.create(body);
-
-        return c.json(result, HttpStatusCodes.CREATED);
-    } catch (error: unknown) {
-        const apiError = ApiError.parse(error);
-        apiError.log({ handler: 'createPickupRequest' });
-
-        switch (apiError.statusCode) {
-            case HttpStatusCodes.BAD_REQUEST:
-                return c.json(apiError.toResponseError(), HttpStatusCodes.BAD_REQUEST);
-            case HttpStatusCodes.UNAUTHORIZED:
-                return c.json(apiError.toResponseError(), HttpStatusCodes.UNAUTHORIZED);
-            case HttpStatusCodes.FORBIDDEN:
-                return c.json(apiError.toResponseError(), HttpStatusCodes.FORBIDDEN);
             default:
                 return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
         }

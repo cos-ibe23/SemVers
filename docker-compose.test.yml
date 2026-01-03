@@ -1,14 +1,79 @@
 services:
+  test-runner:
+    build:
+      context: .
+      dockerfile: Dockerfile.test
+    container_name: imbod-test-runner
+    volumes:
+      - .:/app
+      - /app/node_modules
+    env_file:
+      - .env.test
+    environment:
+      # Override for Docker networking
+      - NODE_ENV=test
+      - DATABASE_URL=postgres://imbod:imbod@db-test:5432/imbod_test
+      - REDIS_URL=redis://redis-test:6379
+      - S3_ENDPOINT=http://minio-test:9000
+      - BETTER_AUTH_URL=http://localhost:4000
+      # Test configuration - can be overridden
+      - VITEST_ARGS=${VITEST_ARGS:-}
+    depends_on:
+      db-test:
+        condition: service_healthy
+      redis-test:
+        condition: service_healthy
+      minio-test:
+        condition: service_healthy
+    # Exit after tests complete
+    restart: "no"
+
   db-test:
-    image: postgres:15-alpine
-    ports:
-      - "5433:5432"
+    image: postgres:16-alpine
+    container_name: imbod-db-test
     environment:
       POSTGRES_USER: imbod
       POSTGRES_PASSWORD: imbod
       POSTGRES_DB: imbod_test
+    # No ports exposed - only accessible within Docker network
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U imbod']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # Use tmpfs for faster tests (data is ephemeral)
+    tmpfs:
+      - /var/lib/postgresql/data
 
   redis-test:
     image: redis:7-alpine
-    ports:
-      - "6380:6379"
+    container_name: imbod-redis-test
+    # No ports exposed - only accessible within Docker network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    # Use tmpfs for faster tests (data is ephemeral)
+    tmpfs:
+      - /data
+
+  minio-test:
+    image: minio/minio:latest
+    container_name: imbod-minio-test
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    # No ports exposed - only accessible within Docker network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    # Use tmpfs for faster tests (data is ephemeral)
+    tmpfs:
+      - /data

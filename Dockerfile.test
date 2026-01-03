@@ -9,7 +9,11 @@ RUN npm install
 COPY . .
 
 # Make startup script executable
-RUN chmod +x scripts/docker-start.sh
+RUN chmod +x scripts/docker-test.sh
 
-EXPOSE 4000
-CMD ["sh", "scripts/docker-start.sh"]
+# Set test environment
+ENV NODE_ENV=test
+
+# No EXPOSE needed for test container
+CMD ["sh", "scripts/docker-test.sh"]
+

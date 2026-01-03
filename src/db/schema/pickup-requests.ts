@@ -5,11 +5,9 @@ import { user } from './auth';
 import { pickups } from './pickups';
 import { currencyEnum } from './fx-rates';
 import { timestamps } from './helpers';
-import { PICKUP_REQUEST_STATUSES, PAYMENT_STATUSES, CURRENCIES } from '../../constants/enums';
+import { PICKUP_REQUEST_STATUSES, CURRENCIES } from '../../constants/enums';
 
 export const pickupRequestStatusEnum = pgEnum('pickup_request_status', PICKUP_REQUEST_STATUSES);
-
-export const paymentStatusEnum = pgEnum('payment_status', PAYMENT_STATUSES);
 
 // Seller metadata type (flexible JSON structure)
 export type SellerMetadata = {
@@ -57,10 +55,8 @@ export const pickupRequests = pgTable('pickup_requests', {
     // IMEIs (comma-separated, optional - can be filled after pickup)
     imeis: text('imeis'),
 
-    // Status and payment
+    // Status
     status: pickupRequestStatusEnum('status').default('PENDING'),
-    estimatedQuoteUsd: decimal('estimated_quote_usd', { precision: 10, scale: 2 }),
-    paymentStatus: paymentStatusEnum('payment_status').default('UNPAID'),
 
     // Conversion tracking
     convertedPickupId: integer('converted_pickup_id').references(() => pickups.id, { onDelete: 'set null' }),
@@ -116,8 +112,6 @@ export const pickupRequestResponseSchema = z.object({
     sellerMetadata: sellerMetadataSchema.nullable(),
     imeis: z.string().nullable(),
     status: z.enum(PICKUP_REQUEST_STATUSES),
-    estimatedQuoteUsd: z.string().nullable(),
-    paymentStatus: z.enum(PAYMENT_STATUSES),
     convertedPickupId: z.number().nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),
@@ -165,7 +159,7 @@ export const createPickupRequestShipperSchema = z.object({
     imeis: z.string().optional(),
 });
 
-// Update request schema
+// Update request schema (simplified - mainly for editing details or rejecting)
 export const updatePickupRequestSchema = z.object({
     clientName: z.string().min(1).max(255).optional(),
     clientEmail: z.string().email().optional(),
@@ -178,6 +172,5 @@ export const updatePickupRequestSchema = z.object({
     itemDescription: z.string().nullable().optional(),
     links: z.string().nullable().optional(),
     imeis: z.string().nullable().optional(),
-    status: z.enum(PICKUP_REQUEST_STATUSES).optional(),
-    estimatedQuoteUsd: z.number().positive().nullable().optional(),
+    status: z.enum(['REJECTED'] as const).optional(), // Only allow setting to REJECTED via update
 });

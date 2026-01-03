@@ -20,13 +20,12 @@ auth:bearer {
 
 body:json {
   {
-    "status": "QUOTED",
-    "estimatedQuoteUsd": 950.00
+    "status": "REJECTED"
   }
 }
 
 docs {
-  Update a pickup request.
+  Update a pickup request (edit details or reject).
 
   Path Parameters:
   - id: The pickup request ID
@@ -43,12 +42,16 @@ docs {
   - itemDescription: Item description
   - links: Marketplace URLs
   - imeis: IMEI numbers
-  - status: Request status (see below)
-  - estimatedQuoteUsd: Shipper's quote in USD
+  - status: Only "REJECTED" allowed (use convert endpoint to proceed)
 
-  Status Flow:
-  PENDING -> QUOTED -> PAYMENT_SUBMITTED -> PAYMENT_VERIFIED -> ACCEPTED -> CONVERTED
-                                                               (or REJECTED at any point)
+  Simplified Status Flow:
+  PENDING -> CONVERTED (via /convert endpoint)
+          -> REJECTED (via this endpoint)
+
+  Actions:
+  - View: GET /v1/pickup-requests/:id
+  - Decline: PATCH with status: "REJECTED"
+  - Proceed: POST /v1/pickup-requests/:id/convert
 
   Note: Cannot update a request with status CONVERTED.
 }

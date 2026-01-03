@@ -24,8 +24,7 @@ export interface UpdatePickupRequestInput {
     itemDescription?: string | null;
     links?: string | null;
     imeis?: string | null;
-    status?: 'PENDING' | 'QUOTED' | 'PAYMENT_SUBMITTED' | 'PAYMENT_VERIFIED' | 'ACCEPTED' | 'REJECTED' | 'CONVERTED';
-    estimatedQuoteUsd?: number | null;
+    status?: 'REJECTED'; // Only allow rejecting via update (CONVERTED happens via convert endpoint)
 }
 
 export interface ListPickupRequestsOptions {
@@ -186,7 +185,6 @@ export class PickupRequestService extends Service {
             if (input.links !== undefined) updateData.links = input.links;
             if (input.imeis !== undefined) updateData.imeis = input.imeis;
             if (input.status !== undefined) updateData.status = input.status;
-            if (input.estimatedQuoteUsd !== undefined) updateData.estimatedQuoteUsd = input.estimatedQuoteUsd?.toString() || null;
 
             const [updated] = await this.db
                 .update(pickupRequests)

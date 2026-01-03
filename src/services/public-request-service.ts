@@ -12,7 +12,7 @@ import {
 import { ApiError, NotFoundError, BadRequestError } from '../lib/errors';
 import { logger } from '../lib/logger';
 import { UserRoles } from '../permissions/types';
-import { PickupRequestStatus, PaymentStatus, Currency, type CurrencyType } from '../constants/enums';
+import { PickupRequestStatus, Currency, type CurrencyType } from '../constants/enums';
 
 export interface PublicFxRate {
     fromCurrency: CurrencyType;
@@ -182,7 +182,6 @@ export class PublicRequestService {
                     links: input.links || null,
                     imeis: input.imeis || null,
                     status: PickupRequestStatus.PENDING,
-                    paymentStatus: PaymentStatus.UNPAID,
                 })
                 .returning();
 

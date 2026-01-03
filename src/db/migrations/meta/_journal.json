@@ -29,6 +29,13 @@
       "when": 1735932600000,
       "tag": "0003_rename_consumer_to_client",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1735936200000,
+      "tag": "0004_simplify_pickup_request_status",
+      "breakpoints": true
     }
   ]
 }

@@ -12,15 +12,12 @@
 // ============================================
 // Pickup Request Status
 // ============================================
-// Flow: PENDING → QUOTED → PAYMENT_SUBMITTED → PAYMENT_VERIFIED → ACCEPTED → CONVERTED
-//       (or REJECTED at any point)
+// Simplified flow: PENDING → CONVERTED (or REJECTED)
+// - Request is the "intent" from client
+// - Pickup is the "reality" after shipper proceeds
 export const PickupRequestStatus = {
-    PENDING: 'PENDING', // Client submitted, shipper hasn't reviewed
-    QUOTED: 'QUOTED', // Shipper provided estimate
-    PAYMENT_SUBMITTED: 'PAYMENT_SUBMITTED', // Client uploaded payment proof
-    PAYMENT_VERIFIED: 'PAYMENT_VERIFIED', // Admin verified payment
-    ACCEPTED: 'ACCEPTED', // Ready to convert to pickup
-    REJECTED: 'REJECTED', // Request declined
+    PENDING: 'PENDING', // Client submitted, awaiting shipper review
+    REJECTED: 'REJECTED', // Shipper declined the request
     CONVERTED: 'CONVERTED', // Converted to a Pickup (immutable)
 } as const;
 
@@ -29,20 +26,6 @@ export const PICKUP_REQUEST_STATUSES = Object.values(PickupRequestStatus) as [
     PickupRequestStatusType,
     ...PickupRequestStatusType[],
 ];
-
-// ============================================
-// Payment Status
-// ============================================
-// Flow: UNPAID → PENDING_VERIFICATION → VERIFIED (or REJECTED)
-export const PaymentStatus = {
-    UNPAID: 'UNPAID', // No payment submitted yet
-    PENDING_VERIFICATION: 'PENDING_VERIFICATION', // Proof uploaded, awaiting admin review
-    VERIFIED: 'VERIFIED', // Admin confirmed payment is valid
-    REJECTED: 'REJECTED', // Payment proof rejected
-} as const;
-
-export type PaymentStatusType = (typeof PaymentStatus)[keyof typeof PaymentStatus];
-export const PAYMENT_STATUSES = Object.values(PaymentStatus) as [PaymentStatusType, ...PaymentStatusType[]];
 
 // ============================================
 // Pickup Status

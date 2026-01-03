@@ -13,18 +13,11 @@ import {
     updatePickupRequestSchema,
 } from '../../../db/schema/pickup-requests';
 import { pickupResponseSchema } from '../../../db/schema/pickups';
+import { PICKUP_REQUEST_STATUSES } from '../../../constants/enums';
 
 const TAGS = ['v1-pickup-requests'] as const;
 
-const pickupRequestStatusEnum = z.enum([
-    'PENDING',
-    'QUOTED',
-    'PAYMENT_SUBMITTED',
-    'PAYMENT_VERIFIED',
-    'ACCEPTED',
-    'REJECTED',
-    'CONVERTED',
-]);
+const pickupRequestStatusEnum = z.enum(PICKUP_REQUEST_STATUSES);
 
 export const listPickupRequests = createRoute({
     middleware: [authenticated],

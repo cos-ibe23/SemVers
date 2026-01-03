@@ -1,27 +1,24 @@
-import { pgTable, serial, text, integer, varchar, decimal, timestamp, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, integer, varchar, decimal, timestamp, pgEnum, jsonb } from 'drizzle-orm/pg-core';
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { user } from './auth';
 import { pickups } from './pickups';
 import { currencyEnum } from './fx-rates';
 import { timestamps } from './helpers';
+import { PICKUP_REQUEST_STATUSES, PAYMENT_STATUSES, CURRENCIES } from '../../constants/enums';
 
-export const pickupRequestStatusEnum = pgEnum('pickup_request_status', [
-    'PENDING',
-    'QUOTED',
-    'PAYMENT_SUBMITTED',
-    'PAYMENT_VERIFIED',
-    'ACCEPTED',
-    'REJECTED',
-    'CONVERTED',
-]);
+export const pickupRequestStatusEnum = pgEnum('pickup_request_status', PICKUP_REQUEST_STATUSES);
 
-export const paymentStatusEnum = pgEnum('payment_status', [
-    'UNPAID',
-    'PENDING_VERIFICATION',
-    'VERIFIED',
-    'REJECTED',
-]);
+export const paymentStatusEnum = pgEnum('payment_status', PAYMENT_STATUSES);
+
+// Seller metadata type (flexible JSON structure)
+export type SellerMetadata = {
+    name?: string;
+    phone?: string;
+    email?: string;
+    address?: string;
+    notes?: string;
+};
 
 export const pickupRequests = pgTable('pickup_requests', {
     id: serial('id').primaryKey(),
@@ -54,9 +51,8 @@ export const pickupRequests = pgTable('pickup_requests', {
     // Marketplace links (comma-separated URLs)
     links: text('links'),
 
-    // Seller info (not a user, just contact details)
-    sellerName: varchar('seller_name', { length: 255 }),
-    sellerPhone: varchar('seller_phone', { length: 50 }),
+    // Seller info (flexible JSON - not a user, just contact details)
+    sellerMetadata: jsonb('seller_metadata').$type<SellerMetadata>(),
 
     // IMEIs (comma-separated, optional - can be filled after pickup)
     imeis: text('imeis'),
@@ -93,6 +89,15 @@ export const patchPickupRequestSchema = insertPickupRequestSchema.partial();
 export const selectPickupRequestItemSchema = createSelectSchema(pickupRequestItems);
 export const insertPickupRequestItemSchema = createInsertSchema(pickupRequestItems);
 
+// Seller metadata Zod schema
+export const sellerMetadataSchema = z.object({
+    name: z.string().optional(),
+    phone: z.string().optional(),
+    email: z.string().email().optional(),
+    address: z.string().optional(),
+    notes: z.string().optional(),
+});
+
 // Response schema for API
 export const pickupRequestResponseSchema = z.object({
     id: z.number(),
@@ -105,15 +110,14 @@ export const pickupRequestResponseSchema = z.object({
     meetupLocation: z.string(),
     pickupTime: z.date(),
     agreedPrice: z.string().nullable(),
-    agreedPriceCurrency: z.enum(['USD', 'NGN', 'GBP', 'EUR']).nullable(),
+    agreedPriceCurrency: z.enum(CURRENCIES).nullable(),
     itemDescription: z.string().nullable(),
     links: z.string().nullable(),
-    sellerName: z.string().nullable(),
-    sellerPhone: z.string().nullable(),
+    sellerMetadata: sellerMetadataSchema.nullable(),
     imeis: z.string().nullable(),
-    status: z.enum(['PENDING', 'QUOTED', 'PAYMENT_SUBMITTED', 'PAYMENT_VERIFIED', 'ACCEPTED', 'REJECTED', 'CONVERTED']),
+    status: z.enum(PICKUP_REQUEST_STATUSES),
     estimatedQuoteUsd: z.string().nullable(),
-    paymentStatus: z.enum(['UNPAID', 'PENDING_VERIFICATION', 'VERIFIED', 'REJECTED']),
+    paymentStatus: z.enum(PAYMENT_STATUSES),
     convertedPickupId: z.number().nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),
@@ -135,9 +139,8 @@ export const createPickupRequestPublicSchema = z.object({
     meetupLocation: z.string().min(1),
     pickupTime: z.string().datetime(),
 
-    // Seller info (optional)
-    sellerName: z.string().max(255).optional(),
-    sellerPhone: z.string().max(50).optional(),
+    // Seller info (optional - stored as metadata)
+    sellerMetadata: sellerMetadataSchema.optional(),
 
     // Item details (optional)
     agreedPrice: z.number().positive().optional(),
@@ -155,10 +158,9 @@ export const createPickupRequestShipperSchema = z.object({
     numberOfItems: z.number().int().min(1),
     meetupLocation: z.string().min(1),
     pickupTime: z.string().datetime(),
-    sellerName: z.string().max(255).optional(),
-    sellerPhone: z.string().max(50).optional(),
+    sellerMetadata: sellerMetadataSchema.optional(),
     agreedPrice: z.number().positive().optional(),
-    agreedPriceCurrency: z.enum(['USD', 'NGN', 'GBP', 'EUR']).default('USD'),
+    agreedPriceCurrency: z.enum(CURRENCIES).default('USD'),
     itemDescription: z.string().optional(),
     links: z.string().optional(),
     imeis: z.string().optional(),
@@ -172,12 +174,11 @@ export const updatePickupRequestSchema = z.object({
     numberOfItems: z.number().int().min(1).optional(),
     meetupLocation: z.string().min(1).optional(),
     pickupTime: z.string().datetime().optional(),
-    sellerName: z.string().max(255).nullable().optional(),
-    sellerPhone: z.string().max(50).nullable().optional(),
+    sellerMetadata: sellerMetadataSchema.nullable().optional(),
     agreedPrice: z.number().positive().nullable().optional(),
     itemDescription: z.string().nullable().optional(),
     links: z.string().nullable().optional(),
     imeis: z.string().nullable().optional(),
-    status: z.enum(['PENDING', 'QUOTED', 'PAYMENT_SUBMITTED', 'PAYMENT_VERIFIED', 'ACCEPTED', 'REJECTED', 'CONVERTED']).optional(),
+    status: z.enum(PICKUP_REQUEST_STATUSES).optional(),
     estimatedQuoteUsd: z.number().positive().nullable().optional(),
 });

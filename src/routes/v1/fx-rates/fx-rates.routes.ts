@@ -11,10 +11,11 @@ import {
     createFxRateRequestSchema,
     updateFxRateRequestSchema,
 } from '../../../db/schema/fx-rates';
+import { CURRENCIES } from '../../../constants/enums';
 
 const TAGS = ['v1-fx-rates'] as const;
 
-const currencyEnum = z.enum(['USD', 'NGN', 'GBP', 'EUR']);
+const currencyEnum = z.enum(CURRENCIES);
 
 export const listFxRates = createRoute({
     middleware: [authenticated],

@@ -12,10 +12,11 @@ import {
     createPickupBodySchema,
     updatePickupBodySchema,
 } from '../../../db/schema/pickups';
+import { PICKUP_STATUSES } from '../../../constants/enums';
 
 const TAGS = ['v1-pickups'] as const;
 
-const pickupStatusEnum = z.enum(['DRAFT', 'CONFIRMED', 'CANCELLED']);
+const pickupStatusEnum = z.enum(PICKUP_STATUSES);
 
 export const listPickups = createRoute({
     middleware: [authenticated],

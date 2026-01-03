@@ -1,20 +1,13 @@
-import { pgTable, serial, integer, varchar, decimal, timestamp, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, serial, integer, varchar, decimal, pgEnum } from 'drizzle-orm/pg-core';
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { pickups } from './pickups';
 import { boxes } from './boxes';
 import { fxRates } from './fx-rates';
 import { timestamps } from './helpers';
+import { ITEM_STATUSES, IMEI_SOURCES } from '../../constants/enums';
 
-export const itemStatusEnum = pgEnum('item_status', [
-    'PENDING',      // In pickup, not yet in box
-    'IN_BOX',       // Assigned to box, not shipped
-    'IN_TRANSIT',   // Box shipped
-    'DELIVERED',    // Box delivered, awaiting client pickup
-    'HANDED_OFF',   // Client received item (pickup code used)
-    'SOLD',         // Item sold by client (optional tracking)
-    'RETURNED',     // Item returned
-]);
+export const itemStatusEnum = pgEnum('item_status', ITEM_STATUSES);
 
 export const items = pgTable('items', {
     id: serial('id').primaryKey(),
@@ -61,7 +54,7 @@ export const itemResponseSchema = z.object({
     clientPaidNgn: z.string().nullable(),
     fxRateId: z.number().nullable(),
     allocatedShipperUsd: z.string().nullable(),
-    status: z.enum(['PENDING', 'IN_BOX', 'IN_TRANSIT', 'DELIVERED', 'HANDED_OFF', 'SOLD', 'RETURNED']).nullable(),
+    status: z.enum(ITEM_STATUSES).nullable(),
     createdAt: z.date(),
     updatedAt: z.date(),
 });
@@ -73,7 +66,7 @@ export const createItemRequestSchema = z.object({
     category: z.string().min(1).max(100),
     model: z.string().max(255).optional(),
     imei: z.string().max(50).optional(),
-    imeiSource: z.enum(['manual', 'scanned', 'api']).optional(),
+    imeiSource: z.enum(IMEI_SOURCES).optional(),
     estimatedWeightLb: z.number().nonnegative().optional(),
     clientShippingUsd: z.number().nonnegative().optional(),
 });
@@ -82,8 +75,8 @@ export const updateItemRequestSchema = z.object({
     category: z.string().min(1).max(100).optional(),
     model: z.string().max(255).nullable().optional(),
     imei: z.string().max(50).nullable().optional(),
-    imeiSource: z.enum(['manual', 'scanned', 'api']).nullable().optional(),
+    imeiSource: z.enum(IMEI_SOURCES).nullable().optional(),
     estimatedWeightLb: z.number().nonnegative().optional(),
     clientShippingUsd: z.number().nonnegative().optional(),
-    status: z.enum(['PENDING', 'IN_BOX', 'IN_TRANSIT', 'DELIVERED', 'HANDED_OFF', 'SOLD', 'RETURNED']).optional(),
+    status: z.enum(ITEM_STATUSES).optional(),
 });

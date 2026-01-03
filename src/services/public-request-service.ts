@@ -1,4 +1,4 @@
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db } from '../db';
 import {
     user,
@@ -6,10 +6,12 @@ import {
     shipperClients,
     pickupRequestResponseSchema,
     type PickupRequestResponse,
+    type SellerMetadata,
 } from '../db/schema';
 import { ApiError, NotFoundError, BadRequestError } from '../lib/errors';
 import { logger } from '../lib/logger';
 import { UserRoles } from '../permissions/types';
+import { PickupRequestStatus, PaymentStatus, Currency } from '../constants/enums';
 
 export interface ShipperPublicInfo {
     id: string;
@@ -33,9 +35,8 @@ export interface CreatePublicRequestInput {
     meetupLocation: string;
     pickupTime: string; // ISO datetime string
 
-    // Seller info (optional)
-    sellerName?: string;
-    sellerPhone?: string;
+    // Seller info (optional - stored as metadata)
+    sellerMetadata?: SellerMetadata;
 
     // Item details (optional)
     agreedPrice?: number;
@@ -153,15 +154,14 @@ export class PublicRequestService {
                     numberOfItems: input.numberOfItems,
                     meetupLocation: input.meetupLocation,
                     pickupTime: new Date(input.pickupTime),
-                    sellerName: input.sellerName || null,
-                    sellerPhone: input.sellerPhone || null,
+                    sellerMetadata: input.sellerMetadata || null,
                     agreedPrice: input.agreedPrice?.toString() || null,
-                    agreedPriceCurrency: 'USD',
+                    agreedPriceCurrency: Currency.USD,
                     itemDescription: input.itemDescription || null,
                     links: input.links || null,
                     imeis: input.imeis || null,
-                    status: 'PENDING',
-                    paymentStatus: 'UNPAID',
+                    status: PickupRequestStatus.PENDING,
+                    paymentStatus: PaymentStatus.UNPAID,
                 })
                 .returning();
 

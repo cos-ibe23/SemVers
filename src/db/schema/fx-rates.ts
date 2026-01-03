@@ -3,9 +3,10 @@ import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { user } from './auth';
 import { timestamps } from './helpers';
+import { CURRENCIES } from '../../constants/enums';
 
 // Currency enum - extensible for future currencies
-export const currencyEnum = pgEnum('currency', ['USD', 'NGN', 'GBP', 'EUR']);
+export const currencyEnum = pgEnum('currency', CURRENCIES);
 
 export const fxRates = pgTable('fx_rates', {
     id: serial('id').primaryKey(),
@@ -36,8 +37,8 @@ export const insertFxRateSchema = createInsertSchema(fxRates);
 export const fxRateResponseSchema = z.object({
     id: z.number(),
     ownerUserId: z.string(),
-    fromCurrency: z.enum(['USD', 'NGN', 'GBP', 'EUR']),
-    toCurrency: z.enum(['USD', 'NGN', 'GBP', 'EUR']),
+    fromCurrency: z.enum(CURRENCIES),
+    toCurrency: z.enum(CURRENCIES),
     rate: z.string(), // Decimal comes as string
     isActive: z.boolean().nullable(),
     createdAt: z.date(),
@@ -49,8 +50,8 @@ export type FxRateResponse = z.infer<typeof fxRateResponseSchema>;
 
 // Request schemas
 export const createFxRateRequestSchema = z.object({
-    fromCurrency: z.enum(['USD', 'NGN', 'GBP', 'EUR']).default('USD'),
-    toCurrency: z.enum(['USD', 'NGN', 'GBP', 'EUR']).default('NGN'),
+    fromCurrency: z.enum(CURRENCIES).default('USD'),
+    toCurrency: z.enum(CURRENCIES).default('NGN'),
     rate: z.string().or(z.number()).transform((val) => String(val)),
 });
 

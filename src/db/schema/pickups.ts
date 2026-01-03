@@ -4,8 +4,9 @@ import { z } from 'zod';
 import { user } from './auth';
 import { fxRates } from './fx-rates';
 import { timestamps } from './helpers';
+import { PICKUP_STATUSES } from '../../constants/enums';
 
-export const pickupStatusEnum = pgEnum('pickup_status', ['DRAFT', 'CONFIRMED', 'CANCELLED']);
+export const pickupStatusEnum = pgEnum('pickup_status', PICKUP_STATUSES);
 
 export const pickups = pgTable('pickups', {
     id: serial('id').primaryKey(),
@@ -45,7 +46,7 @@ export const pickupResponseSchema = z.object({
     itemPriceUsd: z.string().nullable(),
     notes: z.string().nullable(),
     pickupDate: z.string().nullable(),
-    status: z.enum(['DRAFT', 'CONFIRMED', 'CANCELLED']).nullable(),
+    status: z.enum(PICKUP_STATUSES).nullable(),
     sourceRequestId: z.number().nullable(),
     fxRateId: z.number().nullable(),
     createdAt: z.date(),
@@ -69,6 +70,6 @@ export const updatePickupBodySchema = z.object({
     itemPriceUsd: z.number().nonnegative().optional(),
     notes: z.string().nullable().optional(),
     pickupDate: z.string().nullable().optional(),
-    status: z.enum(['DRAFT', 'CONFIRMED', 'CANCELLED']).optional(),
+    status: z.enum(PICKUP_STATUSES).optional(),
     fxRateId: z.number().nullable().optional(),
 });

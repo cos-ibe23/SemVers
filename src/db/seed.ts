@@ -9,6 +9,30 @@ import { db, closeDatabase } from './index';
 import { user, session, shipperClients, fxRates } from './schema';
 import { logger } from '../lib/logger';
 import { UserRoles } from '../permissions/types';
+import { Currency } from '../constants/enums';
+
+// Generate deterministic UUIDs for seed data (using crypto.randomUUID)
+// These are generated once and stored as constants for reproducibility
+const userIds = {
+    systemAdmin: crypto.randomUUID(),
+    admin: crypto.randomUUID(),
+    shipper1: crypto.randomUUID(),
+    shipper2: crypto.randomUUID(),
+    client1: crypto.randomUUID(),
+    client2: crypto.randomUUID(),
+    client3: crypto.randomUUID(),
+    client4: crypto.randomUUID(),
+    client5: crypto.randomUUID(),
+    client6: crypto.randomUUID(),
+    client7: crypto.randomUUID(),
+};
+
+const sessionIds = {
+    admin: crypto.randomUUID(),
+    shipper1: crypto.randomUUID(),
+    shipper2: crypto.randomUUID(),
+    client1: crypto.randomUUID(),
+};
 
 async function seed() {
     logger.info('Starting database seed...');
@@ -19,7 +43,7 @@ async function seed() {
         await db
             .insert(user)
             .values({
-                id: 'system-admin',
+                id: userIds.systemAdmin,
                 name: 'System Admin',
                 email: 'system@imbod.internal',
                 emailVerified: true,
@@ -36,7 +60,7 @@ async function seed() {
         await db
             .insert(user)
             .values({
-                id: 'admin-001',
+                id: userIds.admin,
                 name: 'Admin User',
                 email: 'admin@imbod.test',
                 emailVerified: true,
@@ -49,7 +73,7 @@ async function seed() {
         await db
             .insert(user)
             .values({
-                id: 'shipper-001',
+                id: userIds.shipper1,
                 name: 'Test Shipper',
                 email: 'shipper@imbod.test',
                 emailVerified: true,
@@ -69,7 +93,7 @@ async function seed() {
         await db
             .insert(user)
             .values({
-                id: 'shipper-002',
+                id: userIds.shipper2,
                 name: 'Jane Shipper',
                 email: 'jane@imbod.test',
                 emailVerified: true,
@@ -88,13 +112,13 @@ async function seed() {
 
         // Client users
         const clientUsers = [
-            { id: 'client-001', name: 'John Doe', email: 'john@example.com' },
-            { id: 'client-002', name: 'Jane Smith', email: 'janesmith@example.com' },
-            { id: 'client-003', name: 'Bob Wilson', email: 'bob@example.com' },
-            { id: 'client-004', name: 'Alice Brown', email: 'alice@example.com' },
-            { id: 'client-005', name: 'Charlie Davis', email: 'charlie@example.com' },
-            { id: 'client-006', name: 'Michael Johnson', email: 'michael@example.com' },
-            { id: 'client-007', name: 'Sarah Lee', email: 'sarah@example.com' },
+            { id: userIds.client1, name: 'John Doe', email: 'john@example.com' },
+            { id: userIds.client2, name: 'Jane Smith', email: 'janesmith@example.com' },
+            { id: userIds.client3, name: 'Bob Wilson', email: 'bob@example.com' },
+            { id: userIds.client4, name: 'Alice Brown', email: 'alice@example.com' },
+            { id: userIds.client5, name: 'Charlie Davis', email: 'charlie@example.com' },
+            { id: userIds.client6, name: 'Michael Johnson', email: 'michael@example.com' },
+            { id: userIds.client7, name: 'Sarah Lee', email: 'sarah@example.com' },
         ];
 
         for (const client of clientUsers) {
@@ -115,18 +139,18 @@ async function seed() {
 
         // Shipper 1's clients
         const shipper1Clients = [
-            { clientId: 'client-001', nickname: 'Johnny', phone: '+1234567890' },
-            { clientId: 'client-002', nickname: null, phone: '+0987654321' },
-            { clientId: 'client-003', nickname: 'Bob W', phone: '+1122334455' },
-            { clientId: 'client-004', nickname: null, phone: '+5544332211' },
-            { clientId: 'client-005', nickname: 'Charlie D', phone: null },
+            { clientId: userIds.client1, nickname: 'Johnny', phone: '+1234567890' },
+            { clientId: userIds.client2, nickname: null, phone: '+0987654321' },
+            { clientId: userIds.client3, nickname: 'Bob W', phone: '+1122334455' },
+            { clientId: userIds.client4, nickname: null, phone: '+5544332211' },
+            { clientId: userIds.client5, nickname: 'Charlie D', phone: null },
         ];
 
         for (const client of shipper1Clients) {
             await db
                 .insert(shipperClients)
                 .values({
-                    shipperId: 'shipper-001',
+                    shipperId: userIds.shipper1,
                     clientId: client.clientId,
                     nickname: client.nickname,
                     phone: client.phone,
@@ -136,15 +160,15 @@ async function seed() {
 
         // Shipper 2's clients
         const shipper2Clients = [
-            { clientId: 'client-006', nickname: 'Mike', phone: '+2233445566' },
-            { clientId: 'client-007', nickname: null, phone: '+6655443322' },
+            { clientId: userIds.client6, nickname: 'Mike', phone: '+2233445566' },
+            { clientId: userIds.client7, nickname: null, phone: '+6655443322' },
         ];
 
         for (const client of shipper2Clients) {
             await db
                 .insert(shipperClients)
                 .values({
-                    shipperId: 'shipper-002',
+                    shipperId: userIds.shipper2,
                     clientId: client.clientId,
                     nickname: client.nickname,
                     phone: client.phone,
@@ -159,13 +183,13 @@ async function seed() {
 
         // Shipper 1's FX rates
         const shipper1FxRates = [
-            { ownerUserId: 'shipper-001', fromCurrency: 'USD' as const, toCurrency: 'NGN' as const, rate: '1600.000000', isActive: true },
-            { ownerUserId: 'shipper-001', fromCurrency: 'GBP' as const, toCurrency: 'NGN' as const, rate: '2000.000000', isActive: true },
+            { ownerUserId: userIds.shipper1, fromCurrency: Currency.USD, toCurrency: Currency.NGN, rate: '1600.000000', isActive: true },
+            { ownerUserId: userIds.shipper1, fromCurrency: Currency.GBP, toCurrency: Currency.NGN, rate: '2000.000000', isActive: true },
         ];
 
         // Shipper 2's FX rates
         const shipper2FxRates = [
-            { ownerUserId: 'shipper-002', fromCurrency: 'USD' as const, toCurrency: 'NGN' as const, rate: '1580.000000', isActive: true },
+            { ownerUserId: userIds.shipper2, fromCurrency: Currency.USD, toCurrency: Currency.NGN, rate: '1580.000000', isActive: true },
         ];
 
         for (const rate of [...shipper1FxRates, ...shipper2FxRates]) {
@@ -182,26 +206,26 @@ async function seed() {
 
         const sessionsData = [
             {
-                id: 'session-admin-001',
-                userId: 'admin-001',
+                id: sessionIds.admin,
+                userId: userIds.admin,
                 token: 'test-admin-token-123',
                 expiresAt: oneWeekFromNow,
             },
             {
-                id: 'session-shipper-001',
-                userId: 'shipper-001',
+                id: sessionIds.shipper1,
+                userId: userIds.shipper1,
                 token: 'test-shipper-token-123',
                 expiresAt: oneWeekFromNow,
             },
             {
-                id: 'session-shipper-002',
-                userId: 'shipper-002',
+                id: sessionIds.shipper2,
+                userId: userIds.shipper2,
                 token: 'test-shipper2-token-123',
                 expiresAt: oneWeekFromNow,
             },
             {
-                id: 'session-client-001',
-                userId: 'client-001',
+                id: sessionIds.client1,
+                userId: userIds.client1,
                 token: 'test-client-token-123',
                 expiresAt: oneWeekFromNow,
             },

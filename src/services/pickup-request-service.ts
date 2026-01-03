@@ -1,15 +1,16 @@
-import { eq, and, desc, ilike, or, count, isNull } from 'drizzle-orm';
+import { eq, and, desc, ilike, or, count } from 'drizzle-orm';
 import {
     pickupRequests,
     pickups,
-    user,
     fxRates,
     pickupRequestResponseSchema,
     type PickupRequestResponse,
+    type SellerMetadata,
 } from '../db/schema';
 import { ApiError, ForbiddenError, NotFoundError, BadRequestError } from '../lib/errors';
 import { Resources } from '../lib/user-can';
 import { Service, type ServiceOptions } from './service';
+import { PickupRequestStatus, PaymentStatus, type CurrencyType } from '../constants/enums';
 
 export interface CreatePickupRequestInput {
     clientUserId?: string;
@@ -19,10 +20,9 @@ export interface CreatePickupRequestInput {
     numberOfItems: number;
     meetupLocation: string;
     pickupTime: string;
-    sellerName?: string;
-    sellerPhone?: string;
+    sellerMetadata?: SellerMetadata;
     agreedPrice?: number;
-    agreedPriceCurrency?: 'USD' | 'NGN' | 'GBP' | 'EUR';
+    agreedPriceCurrency?: CurrencyType;
     itemDescription?: string;
     links?: string;
     imeis?: string;
@@ -35,8 +35,7 @@ export interface UpdatePickupRequestInput {
     numberOfItems?: number;
     meetupLocation?: string;
     pickupTime?: string;
-    sellerName?: string | null;
-    sellerPhone?: string | null;
+    sellerMetadata?: SellerMetadata | null;
     agreedPrice?: number | null;
     itemDescription?: string | null;
     links?: string | null;
@@ -93,15 +92,14 @@ export class PickupRequestService extends Service {
                     numberOfItems: input.numberOfItems,
                     meetupLocation: input.meetupLocation,
                     pickupTime: new Date(input.pickupTime),
-                    sellerName: input.sellerName || null,
-                    sellerPhone: input.sellerPhone || null,
+                    sellerMetadata: input.sellerMetadata || null,
                     agreedPrice: input.agreedPrice?.toString() || null,
                     agreedPriceCurrency: input.agreedPriceCurrency || 'USD',
                     itemDescription: input.itemDescription || null,
                     links: input.links || null,
                     imeis: input.imeis || null,
-                    status: 'PENDING',
-                    paymentStatus: 'UNPAID',
+                    status: PickupRequestStatus.PENDING,
+                    paymentStatus: PaymentStatus.UNPAID,
                 })
                 .returning();
 
@@ -176,12 +174,12 @@ export class PickupRequestService extends Service {
             // Build where clause
             let whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-            // Search filter (name, email, seller name)
+            // Search filter (name, email)
+            // Note: sellerMetadata is JSON, so we search only consumer fields here
             if (search) {
                 const searchCondition = or(
                     ilike(pickupRequests.consumerName, `%${search}%`),
-                    ilike(pickupRequests.consumerEmail, `%${search}%`),
-                    ilike(pickupRequests.sellerName, `%${search}%`)
+                    ilike(pickupRequests.consumerEmail, `%${search}%`)
                 );
                 whereClause = whereClause ? and(whereClause, searchCondition) : searchCondition;
             }
@@ -242,8 +240,7 @@ export class PickupRequestService extends Service {
             if (input.numberOfItems !== undefined) updateData.numberOfItems = input.numberOfItems;
             if (input.meetupLocation !== undefined) updateData.meetupLocation = input.meetupLocation;
             if (input.pickupTime !== undefined) updateData.pickupTime = new Date(input.pickupTime);
-            if (input.sellerName !== undefined) updateData.sellerName = input.sellerName;
-            if (input.sellerPhone !== undefined) updateData.sellerPhone = input.sellerPhone;
+            if (input.sellerMetadata !== undefined) updateData.sellerMetadata = input.sellerMetadata;
             if (input.agreedPrice !== undefined) updateData.agreedPrice = input.agreedPrice?.toString() || null;
             if (input.itemDescription !== undefined) updateData.itemDescription = input.itemDescription;
             if (input.links !== undefined) updateData.links = input.links;
@@ -307,7 +304,7 @@ export class PickupRequestService extends Service {
                 throw new ForbiddenError('You are not authorized to convert this pickup request');
             }
 
-            if (existing.status === 'CONVERTED') {
+            if (existing.status === PickupRequestStatus.CONVERTED) {
                 throw new BadRequestError('This pickup request has already been converted');
             }
 
@@ -352,7 +349,7 @@ export class PickupRequestService extends Service {
             const [updatedRequest] = await this.db
                 .update(pickupRequests)
                 .set({
-                    status: 'CONVERTED',
+                    status: PickupRequestStatus.CONVERTED,
                     convertedPickupId: pickup.id,
                 })
                 .where(eq(pickupRequests.id, id))

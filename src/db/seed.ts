@@ -154,18 +154,25 @@ async function seed() {
 
         logger.info({ shipper1Clients: shipper1Clients.length, shipper2Clients: shipper2Clients.length }, 'Created shipper-client relationships');
 
-        // Create FX rates
+        // Create FX rates (per-shipper, multi-currency)
         logger.info('Creating FX rates...');
 
-        const fxRatesData = [
-            { buyRateUsdNgn: '1580.00', clientRateUsdNgn: '1620.00', atmFeePer990Usd: '5.00' },
-            { buyRateUsdNgn: '1590.00', clientRateUsdNgn: '1630.00', atmFeePer990Usd: '5.00' },
-            { buyRateUsdNgn: '1600.00', clientRateUsdNgn: '1650.00', atmFeePer990Usd: '5.50' },
+        // Shipper 1's FX rates
+        const shipper1FxRates = [
+            { ownerUserId: 'shipper-001', fromCurrency: 'USD' as const, toCurrency: 'NGN' as const, rate: '1600.000000', isActive: true },
+            { ownerUserId: 'shipper-001', fromCurrency: 'GBP' as const, toCurrency: 'NGN' as const, rate: '2000.000000', isActive: true },
         ];
 
-        const createdFxRates = await db.insert(fxRates).values(fxRatesData).onConflictDoNothing().returning();
+        // Shipper 2's FX rates
+        const shipper2FxRates = [
+            { ownerUserId: 'shipper-002', fromCurrency: 'USD' as const, toCurrency: 'NGN' as const, rate: '1580.000000', isActive: true },
+        ];
 
-        logger.info({ count: createdFxRates.length }, 'Created FX rates');
+        for (const rate of [...shipper1FxRates, ...shipper2FxRates]) {
+            await db.insert(fxRates).values(rate).onConflictDoNothing();
+        }
+
+        logger.info({ count: shipper1FxRates.length + shipper2FxRates.length }, 'Created FX rates');
 
         // Create test sessions for easy API testing
         logger.info('Creating test sessions...');

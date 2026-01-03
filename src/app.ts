@@ -9,6 +9,11 @@ import indexRouter from './routes/index.route';
 import v1IndexRouter from './routes/v1/index.route';
 import v1AuthRouter from './routes/v1/auth/auth.index';
 import v1ClientsRouter from './routes/v1/shipper-clients/shipper-clients.index';
+import v1FxRatesRouter from './routes/v1/fx-rates/fx-rates.index';
+import v1PublicRequestRouter from './routes/v1/request/request.index';
+import v1PickupRequestsRouter from './routes/v1/pickup-requests/pickup-requests.index';
+import v1PickupsRouter from './routes/v1/pickups/pickups.index';
+import v1ItemsRouter from './routes/v1/items/items.index';
 
 // Create app with middleware
 const app = createApp();
@@ -110,5 +115,10 @@ app.route('/', indexRouter);
 app.route('/v1', v1IndexRouter);
 app.route('/v1', v1AuthRouter);
 app.route('/v1', v1ClientsRouter);
+app.route('/v1', v1FxRatesRouter);
+app.route('/v1', v1PublicRequestRouter);
+app.route('/v1', v1PickupRequestsRouter);
+app.route('/v1', v1PickupsRouter);
+app.route('/v1', v1ItemsRouter);
 
 export default app;

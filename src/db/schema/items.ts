@@ -1,5 +1,6 @@
 import { pgTable, serial, integer, varchar, decimal, timestamp, pgEnum } from 'drizzle-orm/pg-core';
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
+import { z } from 'zod';
 import { pickups } from './pickups';
 import { boxes } from './boxes';
 import { fxRates } from './fx-rates';
@@ -41,3 +42,48 @@ export const items = pgTable('items', {
 export const selectItemSchema = createSelectSchema(items);
 export const insertItemSchema = createInsertSchema(items);
 export const patchItemSchema = insertItemSchema.partial();
+
+// Types
+export type Item = typeof items.$inferSelect;
+
+// Response schema for API
+export const itemResponseSchema = z.object({
+    id: z.number(),
+    pickupId: z.number(),
+    boxId: z.number().nullable(),
+    category: z.string(),
+    model: z.string().nullable(),
+    imei: z.string().nullable(),
+    imeiSource: z.string().nullable(),
+    estimatedWeightLb: z.string().nullable(),
+    clientShippingUsd: z.string().nullable(),
+    serviceFeeUsd: z.string().nullable(),
+    clientPaidNgn: z.string().nullable(),
+    fxRateId: z.number().nullable(),
+    allocatedShipperUsd: z.string().nullable(),
+    status: z.enum(['PENDING', 'IN_BOX', 'IN_TRANSIT', 'DELIVERED', 'HANDED_OFF', 'SOLD', 'RETURNED']).nullable(),
+    createdAt: z.date(),
+    updatedAt: z.date(),
+});
+
+export type ItemResponse = z.infer<typeof itemResponseSchema>;
+
+// Request schemas
+export const createItemRequestSchema = z.object({
+    category: z.string().min(1).max(100),
+    model: z.string().max(255).optional(),
+    imei: z.string().max(50).optional(),
+    imeiSource: z.enum(['manual', 'scanned', 'api']).optional(),
+    estimatedWeightLb: z.number().nonnegative().optional(),
+    clientShippingUsd: z.number().nonnegative().optional(),
+});
+
+export const updateItemRequestSchema = z.object({
+    category: z.string().min(1).max(100).optional(),
+    model: z.string().max(255).nullable().optional(),
+    imei: z.string().max(50).nullable().optional(),
+    imeiSource: z.enum(['manual', 'scanned', 'api']).nullable().optional(),
+    estimatedWeightLb: z.number().nonnegative().optional(),
+    clientShippingUsd: z.number().nonnegative().optional(),
+    status: z.enum(['PENDING', 'IN_BOX', 'IN_TRANSIT', 'DELIVERED', 'HANDED_OFF', 'SOLD', 'RETURNED']).optional(),
+});

@@ -84,11 +84,13 @@ export const shipperPermissions: PermissionConfig = {
             [Actions.LIST]: PermissionConditions.IsOwner,
         },
 
-        // FX Rates - can create and read (no ownership restriction for reading)
+        // FX Rates - full CRUD on own rates
         [Resources.FX_RATES]: {
             [Actions.CREATE]: true,
-            [Actions.READ]: true,
-            [Actions.LIST]: true,
+            [Actions.READ]: PermissionConditions.IsOwner,
+            [Actions.UPDATE]: PermissionConditions.IsOwner,
+            [Actions.DELETE]: PermissionConditions.IsOwner,
+            [Actions.LIST]: PermissionConditions.IsOwner,
         },
 
         // Templates - full CRUD on own templates

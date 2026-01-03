@@ -35,8 +35,7 @@ export interface CreatePublicRequestInput {
     // Client info
     name: string;
     email: string;
-    phoneCountryCode?: string;
-    phoneNumber?: string;
+    phone?: string; // Full phone number (e.g., "+1-555-123-4567")
 
     // Pickup details
     numberOfItems: number;
@@ -47,7 +46,7 @@ export interface CreatePublicRequestInput {
     sellerMetadata?: SellerMetadata;
 
     // Item details (optional)
-    agreedPrice?: number;
+    agreedPrice?: number; // Always in USD for MVP
     itemDescription?: string;
     links?: string;
     imeis?: string;
@@ -158,19 +157,13 @@ export class PublicRequestService {
             const client = await this.findOrCreateClient({
                 name: input.name,
                 email: input.email,
-                phoneCountryCode: input.phoneCountryCode,
-                phoneNumber: input.phoneNumber,
+                phone: input.phone,
             });
 
             // 3. Link client to shipper
             await this.linkClientToShipper(shipper.id, client.id);
 
             // 4. Create pickup request
-            const consumerPhone =
-                input.phoneCountryCode && input.phoneNumber
-                    ? `${input.phoneCountryCode}${input.phoneNumber}`
-                    : input.phoneNumber || null;
-
             const [request] = await db
                 .insert(pickupRequests)
                 .values({
@@ -178,7 +171,7 @@ export class PublicRequestService {
                     clientUserId: client.id,
                     consumerName: input.name,
                     consumerEmail: input.email,
-                    consumerPhone,
+                    consumerPhone: input.phone || null,
                     numberOfItems: input.numberOfItems,
                     meetupLocation: input.meetupLocation,
                     pickupTime: new Date(input.pickupTime),
@@ -216,8 +209,7 @@ export class PublicRequestService {
     private async findOrCreateClient(input: {
         name: string;
         email: string;
-        phoneCountryCode?: string;
-        phoneNumber?: string;
+        phone?: string;
     }): Promise<{ id: string; email: string }> {
         // Check if user exists
         const [existingUser] = await db
@@ -240,8 +232,7 @@ export class PublicRequestService {
                 email: input.email,
                 emailVerified: false,
                 role: UserRoles.CLIENT,
-                phoneCountryCode: input.phoneCountryCode || null,
-                phoneNumber: input.phoneNumber || null,
+                phoneNumber: input.phone || null,
             })
             .returning({ id: user.id, email: user.email });
 

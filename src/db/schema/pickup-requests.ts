@@ -131,8 +131,7 @@ export const createPickupRequestPublicSchema = z.object({
     // Client info (required)
     name: z.string().min(1).max(255),
     email: z.string().email(),
-    phoneCountryCode: z.string().max(10).optional(),
-    phoneNumber: z.string().max(20).optional(),
+    phone: z.string().max(50).optional(), // Full phone number (e.g., "+1-555-123-4567")
 
     // Pickup details (required)
     numberOfItems: z.number().int().min(1),
@@ -143,7 +142,7 @@ export const createPickupRequestPublicSchema = z.object({
     sellerMetadata: sellerMetadataSchema.optional(),
 
     // Item details (optional)
-    agreedPrice: z.number().positive().optional(),
+    agreedPrice: z.number().positive().optional(), // Always in USD for MVP
     itemDescription: z.string().optional(),
     links: z.string().optional(),
     imeis: z.string().optional(),

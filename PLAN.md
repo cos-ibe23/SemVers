@@ -11,26 +11,21 @@
 
 ### 🔴 HIGH PRIORITY - Reduce Clicks & Automate
 
-#### 1. Consumer Pickup Request Link (Public Form)
+#### 1. Consumer Pickup Request Link (not Publicly accessible, user requires initial vouch)
 **Problem:** Shippers manually create pickups from WhatsApp messages
 **Solution:** Shareable link where consumers submit pickup requests
 
 - Shipper gets unique link: `app.com/request/[shipper-slug]`
+- Consumer sign in or creates account
+- Account can only be created if they have 2 vouches ( they need to include emails of who is vouching for them)
+- Vouchers get a notification to approve or decline to vouch
 - Consumer fills form: item type, OfferUp/marketplace link, budget, contact info
 - Can add single or multiple items
 - Shipper gets notification, reviews, and converts to Pickup with one click
-- Auto-populate item details from marketplace URL (scrape title, price, images)
+- Auto-populate item details from from pickiup request details.
 
-#### 2. Bulk Pickup Creation
-**Problem:** Creating pickups one-by-one is tedious
-**Solution:** Bulk create with templates
 
-- "Quick Add" mode: select category → auto-fill defaults → just enter price
-- CSV import for multiple pickups
-- Templates: "Standard Phone Pickup", "Laptop Bundle" with preset fees
-- Clone existing pickup for similar orders
-
-#### 3. Smart Pickup Updates (Post-Purchase Reconciliation)
+#### 2. Smart Pickup Updates (Post-Purchase Reconciliation)
 **Problem:** Shipper needs to update pickup after actually buying items
 **Solution:** Streamlined "Reconcile Pickup" flow
 
@@ -39,10 +34,76 @@
   - ✅ Bought / ❌ Didn't buy (per item)
   - Actual price paid (vs quoted)
   - Add/remove items from original request
-  - Scan IMEI/barcode to auto-populate details
+  - Scan IMEI/barcode to auto-populate details ( for now we can use https://ifreeicloud.co.uk/client-area/ api to get the details)
 - Calculate variance from original quote
 
-#### 4. IMEI/Barcode Scanner
+#### 3. View All Pickup Request Page
+**Problem:** Home only shows last 5 pickups
+**Solution:** Full pickup request list with filters
+
+- Filter by: status, client, date range, box assignment
+- Search by IMEI, client name, item model
+- Bulk actions: assign to box, mark as cancelled
+- Export to CSV
+- Pickup request clear after 7 days ( on the admin side make it editble)
+
+#### 4. View All Pickups Page
+**Problem:** Home only shows last 5 pickups
+**Solution:** Full pickups list with filters
+
+- Filter by: status, client, date range, box assignment
+- Search by IMEI, client name, item model
+- Bulk actions: assign to box, mark as cancelled
+- Export to CSV
+
+#### 5. Vouch
+**Problem:** User needs to feel like the platform is for them only (gate keeping)
+**Solution:** Introduce Vouches
+
+- Approve or Decline Vouch
+
+#### 6. Box Creation
+- **Box**: Container with items (current "Shipment" model)
+  - two types of box, box containing pickups and box assigned to another shipper 
+  - Pickups
+  - Dimension of the box (LxWxH)
+  - Box tied to another user cannot contain pickups and user cannot be a business owner
+  - box assigned to another shipper  comes from a sync from shipper A (client of Shipper B)
+    - add, ship with *insert shipper*
+    - Shipper B after receiving the box physically, has to approve pick up at point of recieve
+    - after approval, box now appears on thier list of shippment, she can edit the box weight and dimension
+    - shipper A gets a notification of the change
+    - generates invoice after weight and dimensions are finalised
+    - item list cannot be edited by shipper B
+    - BoX and its contents can no longer be edited by shipper A
+    - Shipper A uploads a screenshot of Zelle payment, Shipper B approves it as paid
+    - CAN Formally Pickup Box before sync with shipper B 
+    
+#### 7. Shipment Separation
+- **Shipment**: Actual shipping event
+  - list the boxes
+  - Ship date, estimated arrival
+
+
+#### 9. Invoice Generation
+**Timing:** Quote on pickup creation, Final invoice on delivery
+
+Quote/Proforma (on pickup):
+- Estimated costs breakdown
+- FX rate snapshot
+- Payment instructions
+- Validity period
+
+Final Invoice (on confirmed box details eg dimensions and weight):
+- Actual costs in USD (reconciled)
+- Box fees allocated
+- Payment status
+- PDF download, email to client
+---
+
+### 🟡 MEDIUM PRIORITY - Better Visibility & Tracking
+
+#### 3. IMEI/Barcode Scanner
 **Problem:** Manual IMEI entry is error-prone
 **Solution:** Camera-based scanning
 
@@ -51,18 +112,12 @@
 - Auto-fill item details
 - Flag blacklisted devices before shipping
 
----
+#### 13. Notifications
+- Email/SMS when box ships
+- Pickup code delivery
+- Payment reminders
+- Low inventory alerts (for resellers)
 
-### 🟡 MEDIUM PRIORITY - Better Visibility & Tracking
-
-#### 5. View All Pickups Page
-**Problem:** Home only shows last 5 pickups
-**Solution:** Full pickups list with filters
-
-- Filter by: status, client, date range, box assignment
-- Search by IMEI, client name, item model
-- Bulk actions: assign to box, mark as cancelled
-- Export to CSV
 
 #### 6. Item Status Tracking (Sold/Delivered/In-Transit)
 **Problem:** Can't track item lifecycle after delivery
@@ -84,32 +139,13 @@ Only allow "SOLD" marking after HANDED_OFF state.
 - Quick stats: items in transit, pending pickups, revenue this week
 - Action buttons: "New Pickup Request", "Create Box", "View All"
 
-#### 8. Box vs Shipment Separation
-- **Box**: Container with items (current "Shipment" model)
-- **Shipment**: Actual shipping event
-  - Carrier (DHL, FedEx, etc.)
-  - Tracking number
-  - Ship date, estimated arrival
-  - Can have multiple boxes per shipment or 1:1
+
 
 ---
 
 ### 🟢 LOWER PRIORITY - Invoicing, Taxes, Admin
 
-#### 9. Invoice Generation
-**Timing:** Quote on pickup creation, Final invoice on delivery
 
-Quote/Proforma (on pickup):
-- Estimated costs breakdown
-- FX rate snapshot
-- Payment instructions
-- Validity period
-
-Final Invoice (on delivery):
-- Actual costs (reconciled)
-- Box fees allocated
-- Payment status
-- PDF download, email to client
 
 #### 10. Tax Reporting
 **Export Reports:**
@@ -140,11 +176,6 @@ Final Invoice (on delivery):
 - View/pay invoices
 - Request new pickups
 
-#### 13. Notifications
-- Email/SMS when box ships
-- Pickup code delivery
-- Payment reminders
-- Low inventory alerts (for resellers)
 
 #### 14. Marketplace Integration
 - OfferUp link paste → auto-extract item details

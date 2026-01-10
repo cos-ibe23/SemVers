@@ -109,6 +109,20 @@ export const auth = betterAuth({
                 input: false,
                 returned: true,
             },
+            // Onboarding fields
+            street: { type: 'string', input: false, returned: true },
+            city: { type: 'string', input: false, returned: true },
+            state: { type: 'string', input: false, returned: true },
+            country: { type: 'string', input: false, returned: true },
+            phone: { type: 'string', input: false, returned: true },
+            // Vouching status
+            // UNVERIFIED -> PENDING_VOUCH -> VERIFIED (or REJECTED)
+            verificationStatus: { 
+                type: 'string', 
+                defaultValue: 'UNVERIFIED',
+                input: false,
+                returned: true 
+            },
         },
     },
 

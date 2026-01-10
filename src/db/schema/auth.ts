@@ -31,6 +31,9 @@ export const user = pgTable('user', {
     // Shipper-specific fields
     requestSlug: varchar('request_slug', { length: 100 }).unique(), // for public pickup request link
     onboardedAt: timestamp('onboarded_at'), // when shipper completed onboarding
+    
+    // Vouching status
+    verificationStatus: varchar('verification_status', { length: 20 }).notNull().default('UNVERIFIED'),
 });
 
 // Zod schemas for user
@@ -57,6 +60,7 @@ export const userResponseSchema = z.object({
     phoneNumber: z.string().nullable(),
     requestSlug: z.string().nullable(),
     onboardedAt: z.coerce.date().nullable().transform((d) => d?.toISOString() ?? null),
+    verificationStatus: z.enum(['UNVERIFIED', 'PENDING_VOUCH', 'VERIFIED', 'REJECTED']),
 });
 
 export type UserResponse = z.infer<typeof userResponseSchema>;
@@ -73,6 +77,7 @@ export type SessionResponse = z.infer<typeof sessionResponseSchema>;
 // Request schemas for auth endpoints
 export const onboardRequestSchema = z.object({
     businessName: z.string().min(1).max(255),
+    role: z.enum(['SHIPPER', 'CLIENT']),
     logoUrl: z.string().url().max(512).optional().nullable(),
     street: z.string().max(255).optional().nullable(),
     city: z.string().max(100).optional().nullable(),
@@ -80,6 +85,7 @@ export const onboardRequestSchema = z.object({
     country: z.string().max(100).optional().nullable(),
     phoneCountryCode: z.string().max(10).optional().nullable(),
     phoneNumber: z.string().max(20).optional().nullable(),
+    voucherEmails: z.array(z.string().email()).length(2).optional(),
 });
 
 export const updateProfileRequestSchema = z.object({

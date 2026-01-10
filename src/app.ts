@@ -14,6 +14,7 @@ import v1PublicRequestRouter from './routes/v1/request/request.index';
 import v1PickupRequestsRouter from './routes/v1/pickup-requests/pickup-requests.index';
 import v1PickupsRouter from './routes/v1/pickups/pickups.index';
 import v1ItemsRouter from './routes/v1/items/items.index';
+import v1VouchersRouter from './routes/v1/vouchers/vouchers.index';
 
 // Create app with middleware
 const app = createApp();
@@ -120,5 +121,6 @@ app.route('/v1', v1PublicRequestRouter);
 app.route('/v1', v1PickupRequestsRouter);
 app.route('/v1', v1PickupsRouter);
 app.route('/v1', v1ItemsRouter);
+app.route('/v1', v1VouchersRouter);
 
 export default app;

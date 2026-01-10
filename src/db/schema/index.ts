@@ -16,3 +16,4 @@ export * from './imei-scans';
 export * from './invoices';
 export * from './pickup-templates';
 export * from './notifications';
+export * from './vouchers';

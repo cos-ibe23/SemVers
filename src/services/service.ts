@@ -83,6 +83,17 @@ export class Service {
     }
 
     /**
+     * Get the current user
+     * Throws if not authenticated
+     */
+    protected requireUser(): User {
+        if (!this._user) {
+            throw new ApiError('Authentication required', { statusCode: 401 });
+        }
+        return this._user;
+    }
+
+    /**
      * Log service activity
      */
     protected log(

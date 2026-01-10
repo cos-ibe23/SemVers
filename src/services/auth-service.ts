@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import slugify from 'slugify';
 import { db } from '../db';
-import { user, userResponseSchema, type UserResponse } from '../db/schema';
+import { user, userResponseSchema, type UserResponse, userVouches } from '../db/schema';
 import { ApiError, NotFoundError, BadRequestError } from '../lib/errors';
 import { logger } from '../lib/logger';
 import { Resources } from '../permissions/types';
@@ -16,6 +16,8 @@ export interface OnboardInput {
     country?: string | null;
     phoneCountryCode?: string | null;
     phoneNumber?: string | null;
+    role?: 'SHIPPER' | 'CLIENT';
+    voucherEmails?: string[];
 }
 
 export interface UpdateProfileInput {
@@ -98,16 +100,6 @@ export class AuthService extends Service {
         try {
             const userId = this.requireUserId();
 
-            // Check permissions using UserCan RBAC
-            if (!this.userCan.canCreate(Resources.PROFILES)) {
-                throw new BadRequestError('You do not have permission to complete onboarding');
-            }
-
-            // Only shippers can onboard (get requestSlug)
-            if (!this.userCan.isShipper()) {
-                throw new BadRequestError('Only shippers can complete onboarding');
-            }
-
             const [existingUser] = await this.db
                 .select()
                 .from(user)
@@ -122,7 +114,20 @@ export class AuthService extends Service {
                 throw new BadRequestError('User already onboarded');
             }
 
-            const requestSlug = await this.generateUniqueSlug(input.businessName);
+            const requestSlug = input.role === 'SHIPPER' || (!input.role && existingUser.role === 'SHIPPER') 
+                ? await this.generateUniqueSlug(input.businessName) 
+                : null;
+
+            // Handle Vouching
+            if (input.voucherEmails && input.voucherEmails.length > 0) {
+                 await this.db.insert(userVouches).values(
+                    input.voucherEmails.map(email => ({
+                        requesterUserId: userId,
+                        voucherEmail: email,
+                        status: 'PENDING' as const,
+                    }))
+                );
+            }
 
             const [updatedUser] = await this.db
                 .update(user)
@@ -135,8 +140,10 @@ export class AuthService extends Service {
                     country: input.country ?? null,
                     phoneCountryCode: input.phoneCountryCode ?? null,
                     phoneNumber: input.phoneNumber ?? null,
-                    requestSlug,
+                    role: input.role ?? existingUser.role, // Allow updating role
+                    requestSlug, // Only for shippers
                     onboardedAt: new Date(),
+                    verificationStatus: 'PENDING_VOUCH', // Stuck here until vouched
                     updatedAt: new Date(),
                 })
                 .where(eq(user.id, userId))

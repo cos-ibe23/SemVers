@@ -172,7 +172,7 @@ describe('Auth Routes', () => {
             expect(body.error).toContain('already onboarded');
         });
 
-        it('should return 400 if user is not a shipper', async () => {
+        it('should onboard client successfully', async () => {
             const user = await userFactory.createClient();
 
             const app = createTestApp();
@@ -184,12 +184,15 @@ describe('Auth Routes', () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     businessName: 'New Business',
+                    role: 'CLIENT',
                 }),
             });
 
-            expect(response.status).toBe(400);
+            expect(response.status).toBe(200);
             const body = await response.json();
-            expect(body.error).toContain('permission to complete onboarding');
+            expect(body.role).toBe('CLIENT');
+            expect(body.onboardedAt).toBeDefined();
+            expect(body.requestSlug).toBeNull();
         });
     });
 

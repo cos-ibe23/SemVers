@@ -48,6 +48,8 @@ export const onboard: AppRouteHandler<OnboardRoute> = async (c) => {
             country?: string | null;
             phoneCountryCode?: string | null;
             phoneNumber?: string | null;
+            role?: 'SHIPPER' | 'CLIENT';
+            voucherEmails?: string[];
         };
 
         // Handle multipart form data (file upload)

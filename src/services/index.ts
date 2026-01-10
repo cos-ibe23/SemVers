@@ -8,3 +8,4 @@ export { PickupService } from './pickup-service';
 export { ItemService } from './item-service';
 export { UploadService, isUploadEnabled } from './upload-service';
 export type { UploadFileOptions, UploadResult } from './upload-service';
+export { VouchService } from './vouch-service';

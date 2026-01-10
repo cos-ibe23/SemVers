@@ -78,7 +78,6 @@ export type SessionResponse = z.infer<typeof sessionResponseSchema>;
 export const onboardRequestSchema = z.object({
     businessName: z.string().min(1).max(255),
     role: z.enum(['SHIPPER', 'CLIENT']),
-    logoUrl: z.string().url().max(512).optional().nullable(),
     street: z.string().max(255).optional().nullable(),
     city: z.string().max(100).optional().nullable(),
     state: z.string().max(100).optional().nullable(),

@@ -9,7 +9,6 @@ import { Service, type ServiceOptions } from './service';
 
 export interface OnboardInput {
     businessName: string;
-    logoUrl?: string | null;
     street?: string | null;
     city?: string | null;
     state?: string | null;
@@ -133,7 +132,6 @@ export class AuthService extends Service {
                 .update(user)
                 .set({
                     businessName: input.businessName,
-                    logoUrl: input.logoUrl ?? null,
                     street: input.street ?? null,
                     city: input.city ?? null,
                     state: input.state ?? null,

@@ -59,6 +59,91 @@ export type ItemStatusType = (typeof ItemStatus)[keyof typeof ItemStatus];
 export const ITEM_STATUSES = Object.values(ItemStatus) as [ItemStatusType, ...ItemStatusType[]];
 
 // ============================================
+// Box Status
+// ============================================
+// Flow: OPEN → SEALED → SHIPPED → DELIVERED
+export const BoxStatus = {
+    OPEN: 'OPEN', // Box is open, items can be added
+    SEALED: 'SEALED', // Box is sealed, ready for shipment
+    SHIPPED: 'SHIPPED', // Box has been shipped
+    DELIVERED: 'DELIVERED', // Box has been delivered
+} as const;
+
+export type BoxStatusType = (typeof BoxStatus)[keyof typeof BoxStatus];
+export const BOX_STATUSES = Object.values(BoxStatus) as [BoxStatusType, ...BoxStatusType[]];
+
+// ============================================
+// Shipment Status
+// ============================================
+// Flow: PENDING → IN_TRANSIT → DELIVERED
+export const ShipmentStatus = {
+    PENDING: 'PENDING', // Shipment created, not yet in transit
+    IN_TRANSIT: 'IN_TRANSIT', // Shipment is on the way
+    DELIVERED: 'DELIVERED', // Shipment has arrived
+} as const;
+
+export type ShipmentStatusType = (typeof ShipmentStatus)[keyof typeof ShipmentStatus];
+export const SHIPMENT_STATUSES = Object.values(ShipmentStatus) as [ShipmentStatusType, ...ShipmentStatusType[]];
+
+// ============================================
+// Invoice Type
+// ============================================
+export const InvoiceType = {
+    QUOTE: 'QUOTE', // Proforma/estimate invoice
+    FINAL: 'FINAL', // Final invoice after confirmation
+} as const;
+
+export type InvoiceTypeType = (typeof InvoiceType)[keyof typeof InvoiceType];
+export const INVOICE_TYPES = Object.values(InvoiceType) as [InvoiceTypeType, ...InvoiceTypeType[]];
+
+// ============================================
+// Payment Method
+// ============================================
+export const PaymentMethod = {
+    ZELLE: 'ZELLE',
+    CASHAPP: 'CASHAPP',
+    VENMO: 'VENMO',
+    BANK_TRANSFER: 'BANK_TRANSFER',
+    PAYPAL: 'PAYPAL',
+    OTHER: 'OTHER',
+} as const;
+
+export type PaymentMethodType = (typeof PaymentMethod)[keyof typeof PaymentMethod];
+export const PAYMENT_METHODS = Object.values(PaymentMethod) as [PaymentMethodType, ...PaymentMethodType[]];
+
+// ============================================
+// Payment Proof Status
+// ============================================
+export const PaymentProofStatus = {
+    PENDING: 'PENDING', // Waiting for verification
+    VERIFIED: 'VERIFIED', // Payment confirmed by shipper
+    REJECTED: 'REJECTED', // Payment rejected by shipper
+} as const;
+
+export type PaymentProofStatusType = (typeof PaymentProofStatus)[keyof typeof PaymentProofStatus];
+export const PAYMENT_PROOF_STATUSES = Object.values(PaymentProofStatus) as [
+    PaymentProofStatusType,
+    ...PaymentProofStatusType[],
+];
+
+// ============================================
+// Notification Type
+// ============================================
+export const NotificationType = {
+    NEW_REQUEST: 'NEW_REQUEST', // New pickup request submitted
+    PAYMENT_SUBMITTED: 'PAYMENT_SUBMITTED', // Client submitted payment proof
+    PAYMENT_VERIFIED: 'PAYMENT_VERIFIED', // Payment was verified
+    BOX_SHIPPED: 'BOX_SHIPPED', // Box was shipped
+    BOX_DELIVERED: 'BOX_DELIVERED', // Box was delivered
+} as const;
+
+export type NotificationTypeType = (typeof NotificationType)[keyof typeof NotificationType];
+export const NOTIFICATION_TYPES = Object.values(NotificationType) as [
+    NotificationTypeType,
+    ...NotificationTypeType[],
+];
+
+// ============================================
 // Currency
 // ============================================
 export const Currency = {

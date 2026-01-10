@@ -1,9 +1,9 @@
+CREATE TYPE "public"."currency" AS ENUM('USD', 'NGN', 'GBP', 'EUR');--> statement-breakpoint
 CREATE TYPE "public"."pickup_status" AS ENUM('DRAFT', 'CONFIRMED', 'CANCELLED');--> statement-breakpoint
 CREATE TYPE "public"."item_status" AS ENUM('PENDING', 'IN_BOX', 'IN_TRANSIT', 'DELIVERED', 'HANDED_OFF', 'SOLD', 'RETURNED');--> statement-breakpoint
 CREATE TYPE "public"."box_status" AS ENUM('OPEN', 'SEALED', 'SHIPPED', 'DELIVERED');--> statement-breakpoint
 CREATE TYPE "public"."shipment_status" AS ENUM('PENDING', 'IN_TRANSIT', 'DELIVERED');--> statement-breakpoint
-CREATE TYPE "public"."payment_status" AS ENUM('UNPAID', 'PENDING_VERIFICATION', 'VERIFIED', 'REJECTED');--> statement-breakpoint
-CREATE TYPE "public"."pickup_request_status" AS ENUM('PENDING', 'QUOTED', 'PAYMENT_SUBMITTED', 'PAYMENT_VERIFIED', 'ACCEPTED', 'REJECTED', 'CONVERTED');--> statement-breakpoint
+CREATE TYPE "public"."pickup_request_status" AS ENUM('PENDING', 'REJECTED', 'CONVERTED');--> statement-breakpoint
 CREATE TYPE "public"."payment_method" AS ENUM('ZELLE', 'CASHAPP', 'VENMO', 'BANK_TRANSFER', 'PAYPAL', 'OTHER');--> statement-breakpoint
 CREATE TYPE "public"."payment_proof_status" AS ENUM('PENDING', 'VERIFIED', 'REJECTED');--> statement-breakpoint
 CREATE TYPE "public"."invoice_type" AS ENUM('QUOTE', 'FINAL');--> statement-breakpoint
@@ -13,6 +13,7 @@ CREATE TABLE "account" (
 	"user_id" text NOT NULL,
 	"account_id" text NOT NULL,
 	"provider_id" text NOT NULL,
+	"password" text,
 	"access_token" text,
 	"refresh_token" text,
 	"access_token_expires_at" timestamp,
@@ -20,7 +21,8 @@ CREATE TABLE "account" (
 	"scope" text,
 	"id_token" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "session" (
@@ -32,6 +34,7 @@ CREATE TABLE "session" (
 	"user_agent" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp,
 	CONSTRAINT "session_token_unique" UNIQUE("token")
 );
 --> statement-breakpoint
@@ -45,6 +48,7 @@ CREATE TABLE "user" (
 	"is_system_user" boolean DEFAULT false NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp,
 	"business_name" varchar(255),
 	"logo_url" varchar(512),
 	"street" varchar(255),
@@ -65,7 +69,8 @@ CREATE TABLE "verification" (
 	"value" text NOT NULL,
 	"expires_at" timestamp NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "shipper_clients" (
@@ -73,17 +78,23 @@ CREATE TABLE "shipper_clients" (
 	"client_id" text NOT NULL,
 	"nickname" varchar(255),
 	"phone" varchar(50),
-	"deleted_at" timestamp,
 	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp,
 	CONSTRAINT "shipper_clients_shipper_id_client_id_pk" PRIMARY KEY("shipper_id","client_id")
 );
 --> statement-breakpoint
 CREATE TABLE "fx_rates" (
 	"id" serial PRIMARY KEY NOT NULL,
-	"buy_rate_usd_ngn" numeric(12, 4) NOT NULL,
-	"client_rate_usd_ngn" numeric(12, 4) NOT NULL,
-	"atm_fee_per_990_usd" numeric(10, 2) DEFAULT '0',
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"owner_user_id" text NOT NULL,
+	"from_currency" "currency" NOT NULL,
+	"to_currency" "currency" NOT NULL,
+	"cost_rate" numeric(15, 6) NOT NULL,
+	"client_rate" numeric(15, 6) NOT NULL,
+	"is_active" boolean DEFAULT true,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "pickups" (
@@ -96,7 +107,10 @@ CREATE TABLE "pickups" (
 	"pickup_date" date,
 	"status" "pickup_status" DEFAULT 'DRAFT',
 	"source_request_id" integer,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"fx_rate_id" integer,
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "items" (
@@ -114,7 +128,9 @@ CREATE TABLE "items" (
 	"fx_rate_id" integer,
 	"allocated_shipper_usd" numeric(10, 2),
 	"status" "item_status" DEFAULT 'PENDING',
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "boxes" (
@@ -127,7 +143,9 @@ CREATE TABLE "boxes" (
 	"insurance_usd" numeric(10, 2) DEFAULT '0',
 	"status" "box_status" DEFAULT 'OPEN',
 	"delivered_at" timestamp,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "box_shipments" (
@@ -145,7 +163,9 @@ CREATE TABLE "shipments" (
 	"estimated_arrival" date,
 	"actual_arrival" date,
 	"status" "shipment_status" DEFAULT 'PENDING',
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "pickup_request_items" (
@@ -154,20 +174,33 @@ CREATE TABLE "pickup_request_items" (
 	"category" varchar(100),
 	"description" text,
 	"marketplace_url" varchar(512),
-	"budget_usd" numeric(10, 2)
+	"budget_usd" numeric(10, 2),
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "pickup_requests" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"shipper_user_id" text NOT NULL,
-	"consumer_name" varchar(255) NOT NULL,
-	"consumer_email" varchar(255),
-	"consumer_phone" varchar(50),
+	"client_user_id" text,
+	"client_name" varchar(255) NOT NULL,
+	"client_email" varchar(255),
+	"client_phone" varchar(50),
+	"number_of_items" integer DEFAULT 1 NOT NULL,
+	"meetup_location" text NOT NULL,
+	"pickup_time" timestamp NOT NULL,
+	"agreed_price" numeric(10, 2),
+	"agreed_price_currency" "currency" DEFAULT 'USD',
+	"item_description" text,
+	"links" text,
+	"seller_metadata" jsonb,
+	"imeis" text,
 	"status" "pickup_request_status" DEFAULT 'PENDING',
-	"estimated_quote_usd" numeric(10, 2),
-	"payment_status" "payment_status" DEFAULT 'UNPAID',
 	"converted_pickup_id" integer,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "payment_proofs" (
@@ -183,7 +216,9 @@ CREATE TABLE "payment_proofs" (
 	"verified_by_user_id" text,
 	"verified_at" timestamp,
 	"rejection_reason" text,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "shipper_payment_methods" (
@@ -193,7 +228,9 @@ CREATE TABLE "shipper_payment_methods" (
 	"handle" varchar(255) NOT NULL,
 	"instructions" text,
 	"is_active" boolean DEFAULT true,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "pickup_codes" (
@@ -202,7 +239,9 @@ CREATE TABLE "pickup_codes" (
 	"client_user_id" text NOT NULL,
 	"code" varchar(20) NOT NULL,
 	"used_at" timestamp,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "imei_scans" (
@@ -211,7 +250,9 @@ CREATE TABLE "imei_scans" (
 	"provider" varchar(50),
 	"result" jsonb,
 	"cost_usd" numeric(8, 4),
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "invoices" (
@@ -225,7 +266,9 @@ CREATE TABLE "invoices" (
 	"total_ngn" numeric(15, 2),
 	"pdf_url" varchar(512),
 	"sent_at" timestamp,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "pickup_templates" (
@@ -236,7 +279,9 @@ CREATE TABLE "pickup_templates" (
 	"default_pickup_fee_usd" numeric(10, 2),
 	"default_client_shipping_usd" numeric(10, 2),
 	"default_service_fee_usd" numeric(10, 2),
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "email_logs" (
@@ -250,7 +295,9 @@ CREATE TABLE "email_logs" (
 	"status" varchar(20) DEFAULT 'PENDING',
 	"error_message" text,
 	"sent_at" timestamp,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 CREATE TABLE "notification_settings" (
@@ -263,6 +310,7 @@ CREATE TABLE "notification_settings" (
 	"email_on_box_delivered" boolean DEFAULT true,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp,
 	CONSTRAINT "notification_settings_user_id_unique" UNIQUE("user_id")
 );
 --> statement-breakpoint
@@ -276,15 +324,19 @@ CREATE TABLE "notifications" (
 	"related_box_id" integer,
 	"related_shipment_id" integer,
 	"is_read" boolean DEFAULT false,
-	"created_at" timestamp DEFAULT now() NOT NULL
+	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"deleted_at" timestamp
 );
 --> statement-breakpoint
 ALTER TABLE "account" ADD CONSTRAINT "account_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "session" ADD CONSTRAINT "session_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shipper_clients" ADD CONSTRAINT "shipper_clients_shipper_id_user_id_fk" FOREIGN KEY ("shipper_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "shipper_clients" ADD CONSTRAINT "shipper_clients_client_id_user_id_fk" FOREIGN KEY ("client_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "fx_rates" ADD CONSTRAINT "fx_rates_owner_user_id_user_id_fk" FOREIGN KEY ("owner_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pickups" ADD CONSTRAINT "pickups_owner_user_id_user_id_fk" FOREIGN KEY ("owner_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pickups" ADD CONSTRAINT "pickups_client_user_id_user_id_fk" FOREIGN KEY ("client_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "pickups" ADD CONSTRAINT "pickups_fx_rate_id_fx_rates_id_fk" FOREIGN KEY ("fx_rate_id") REFERENCES "public"."fx_rates"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "items" ADD CONSTRAINT "items_pickup_id_pickups_id_fk" FOREIGN KEY ("pickup_id") REFERENCES "public"."pickups"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "items" ADD CONSTRAINT "items_box_id_boxes_id_fk" FOREIGN KEY ("box_id") REFERENCES "public"."boxes"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "items" ADD CONSTRAINT "items_fx_rate_id_fx_rates_id_fk" FOREIGN KEY ("fx_rate_id") REFERENCES "public"."fx_rates"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -294,6 +346,7 @@ ALTER TABLE "box_shipments" ADD CONSTRAINT "box_shipments_shipment_id_shipments_
 ALTER TABLE "shipments" ADD CONSTRAINT "shipments_owner_user_id_user_id_fk" FOREIGN KEY ("owner_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pickup_request_items" ADD CONSTRAINT "pickup_request_items_request_id_pickup_requests_id_fk" FOREIGN KEY ("request_id") REFERENCES "public"."pickup_requests"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pickup_requests" ADD CONSTRAINT "pickup_requests_shipper_user_id_user_id_fk" FOREIGN KEY ("shipper_user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "pickup_requests" ADD CONSTRAINT "pickup_requests_client_user_id_user_id_fk" FOREIGN KEY ("client_user_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "pickup_requests" ADD CONSTRAINT "pickup_requests_converted_pickup_id_pickups_id_fk" FOREIGN KEY ("converted_pickup_id") REFERENCES "public"."pickups"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payment_proofs" ADD CONSTRAINT "payment_proofs_request_id_pickup_requests_id_fk" FOREIGN KEY ("request_id") REFERENCES "public"."pickup_requests"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payment_proofs" ADD CONSTRAINT "payment_proofs_verified_by_user_id_user_id_fk" FOREIGN KEY ("verified_by_user_id") REFERENCES "public"."user"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint

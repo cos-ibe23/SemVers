@@ -2,8 +2,9 @@ import { pgTable, serial, text, varchar, decimal, timestamp, pgEnum } from 'driz
 import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { user } from './auth';
 import { timestamps } from './helpers';
+import { BOX_STATUSES } from '../../constants/enums';
 
-export const boxStatusEnum = pgEnum('box_status', ['OPEN', 'SEALED', 'SHIPPED', 'DELIVERED']);
+export const boxStatusEnum = pgEnum('box_status', BOX_STATUSES);
 
 export const boxes = pgTable('boxes', {
     id: serial('id').primaryKey(),

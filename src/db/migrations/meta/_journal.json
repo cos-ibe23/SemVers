@@ -5,36 +5,8 @@
     {
       "idx": 0,
       "version": "7",
-      "when": 1767383800026,
-      "tag": "0000_gorgeous_loa",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "7",
-      "when": 1767385832866,
-      "tag": "0001_burly_tiger_shark",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "7",
-      "when": 1735930128000,
-      "tag": "0002_fx_rates_dual_rates",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "7",
-      "when": 1735932600000,
-      "tag": "0003_rename_consumer_to_client",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "7",
-      "when": 1735936200000,
-      "tag": "0004_simplify_pickup_request_status",
+      "when": 1768075509661,
+      "tag": "0000_massive_dorian_gray",
       "breakpoints": true
     }
   ]

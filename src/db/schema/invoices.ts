@@ -4,8 +4,9 @@ import { user } from './auth';
 import { pickups } from './pickups';
 import { boxes } from './boxes';
 import { timestamps } from './helpers';
+import { INVOICE_TYPES } from '../../constants/enums';
 
-export const invoiceTypeEnum = pgEnum('invoice_type', ['QUOTE', 'FINAL']);
+export const invoiceTypeEnum = pgEnum('invoice_type', INVOICE_TYPES);
 
 export const invoices = pgTable('invoices', {
     id: serial('id').primaryKey(),

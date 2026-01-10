@@ -3,21 +3,10 @@ import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { user } from './auth';
 import { pickupRequests } from './pickup-requests';
 import { timestamps } from './helpers';
+import { PAYMENT_METHODS, PAYMENT_PROOF_STATUSES } from '../../constants/enums';
 
-export const paymentMethodEnum = pgEnum('payment_method', [
-    'ZELLE',
-    'CASHAPP',
-    'VENMO',
-    'BANK_TRANSFER',
-    'PAYPAL',
-    'OTHER',
-]);
-
-export const paymentProofStatusEnum = pgEnum('payment_proof_status', [
-    'PENDING',
-    'VERIFIED',
-    'REJECTED',
-]);
+export const paymentMethodEnum = pgEnum('payment_method', PAYMENT_METHODS);
+export const paymentProofStatusEnum = pgEnum('payment_proof_status', PAYMENT_PROOF_STATUSES);
 
 export const paymentProofs = pgTable('payment_proofs', {
     id: serial('id').primaryKey(),

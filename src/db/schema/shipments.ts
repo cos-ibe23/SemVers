@@ -3,8 +3,9 @@ import { createSelectSchema, createInsertSchema } from 'drizzle-zod';
 import { user } from './auth';
 import { boxes } from './boxes';
 import { timestamps } from './helpers';
+import { SHIPMENT_STATUSES } from '../../constants/enums';
 
-export const shipmentStatusEnum = pgEnum('shipment_status', ['PENDING', 'IN_TRANSIT', 'DELIVERED']);
+export const shipmentStatusEnum = pgEnum('shipment_status', SHIPMENT_STATUSES);
 
 export const shipments = pgTable('shipments', {
     id: serial('id').primaryKey(),

@@ -5,14 +5,9 @@ import { pickupRequests } from './pickup-requests';
 import { boxes } from './boxes';
 import { shipments } from './shipments';
 import { timestamps } from './helpers';
+import { NOTIFICATION_TYPES } from '../../constants/enums';
 
-export const notificationTypeEnum = pgEnum('notification_type', [
-    'NEW_REQUEST',
-    'PAYMENT_SUBMITTED',
-    'PAYMENT_VERIFIED',
-    'BOX_SHIPPED',
-    'BOX_DELIVERED',
-]);
+export const notificationTypeEnum = pgEnum('notification_type', NOTIFICATION_TYPES);
 
 // Shipper notifications
 export const notifications = pgTable('notifications', {

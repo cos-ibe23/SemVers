@@ -19,7 +19,7 @@ describe('UserCan', () => {
             updatedAt: new Date(),
             deletedAt: null,
             businessName: null,
-            logoUrl: null,
+
             street: null,
             city: null,
             state: null,
@@ -28,6 +28,7 @@ describe('UserCan', () => {
             phoneNumber: null,
             requestSlug: null,
             onboardedAt: null,
+            verificationStatus: 'PENDING',
         };
 
         adminUser = {
@@ -42,7 +43,7 @@ describe('UserCan', () => {
             updatedAt: new Date(),
             deletedAt: null,
             businessName: null,
-            logoUrl: null,
+
             street: null,
             city: null,
             state: null,
@@ -51,6 +52,7 @@ describe('UserCan', () => {
             phoneNumber: null,
             requestSlug: null,
             onboardedAt: null,
+            verificationStatus: 'PENDING',
         };
     });
 

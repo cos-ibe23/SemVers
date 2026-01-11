@@ -6,6 +6,6 @@ export { PublicRequestService } from './public-request-service';
 export { PickupRequestService } from './pickup-request-service';
 export { PickupService } from './pickup-service';
 export { ItemService } from './item-service';
-export { UploadService, isUploadEnabled } from './upload-service';
-export type { UploadFileOptions, UploadResult } from './upload-service';
+// UploadService export removed
+// type export removed
 export { VouchService } from './vouch-service';

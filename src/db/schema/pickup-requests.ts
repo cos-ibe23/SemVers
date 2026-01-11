@@ -122,9 +122,9 @@ export type PickupRequestResponse = z.infer<typeof pickupRequestResponseSchema>;
 
 // Public request form schema (for client submission)
 export const createPickupRequestPublicSchema = z.object({
-    // Client info (required)
-    name: z.string().min(1).max(255),
-    email: z.string().email(),
+    // Client info (optional - ignored/overridden by authenticated user profile)
+    name: z.string().max(255).optional(),
+    email: z.string().email().optional(),
     phone: z.string().max(50).optional(), // Full phone number (e.g., "+1-555-123-4567")
 
     // Pickup details (required)

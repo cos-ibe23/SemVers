@@ -20,7 +20,7 @@ export const user = pgTable('user', {
 
     // Business/profile fields (any user can have business info)
     businessName: varchar('business_name', { length: 255 }),
-    logoUrl: varchar('logo_url', { length: 512 }),
+
     street: varchar('street', { length: 255 }),
     city: varchar('city', { length: 100 }),
     state: varchar('state', { length: 100 }),
@@ -51,7 +51,7 @@ export const userResponseSchema = z.object({
     createdAt: z.coerce.date().transform((d) => d.toISOString()),
     updatedAt: z.coerce.date().transform((d) => d.toISOString()),
     businessName: z.string().nullable(),
-    logoUrl: z.string().nullable(),
+
     street: z.string().nullable(),
     city: z.string().nullable(),
     state: z.string().nullable(),
@@ -77,7 +77,7 @@ export type SessionResponse = z.infer<typeof sessionResponseSchema>;
 // Request schemas for auth endpoints
 export const onboardRequestSchema = z.object({
     businessName: z.string().min(1).max(255),
-    role: z.enum(['SHIPPER', 'CLIENT']),
+    role: z.enum(['SHIPPER', 'CLIENT']).optional(),
     street: z.string().max(255).optional().nullable(),
     city: z.string().max(100).optional().nullable(),
     state: z.string().max(100).optional().nullable(),
@@ -89,7 +89,7 @@ export const onboardRequestSchema = z.object({
 
 export const updateProfileRequestSchema = z.object({
     businessName: z.string().min(1).max(255).optional(),
-    logoUrl: z.string().url().max(512).optional().nullable(),
+
     street: z.string().max(255).optional().nullable(),
     city: z.string().max(100).optional().nullable(),
     state: z.string().max(100).optional().nullable(),

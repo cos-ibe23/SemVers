@@ -10,6 +10,7 @@ import {
     createPickupRequestPublicSchema,
 } from '../../../db/schema/pickup-requests';
 import { CURRENCIES } from '../../../constants/enums';
+import { authenticated } from '../../../middlewares';
 
 const TAGS = ['v1-public-request'] as const;
 
@@ -25,7 +26,7 @@ const shipperPublicInfoSchema = z.object({
     id: z.string(),
     name: z.string(),
     businessName: z.string().nullable(),
-    logoUrl: z.string().nullable(),
+
     city: z.string().nullable(),
     state: z.string().nullable(),
     country: z.string().nullable(),
@@ -51,7 +52,7 @@ export const getShipperBySlug = createRoute({
 });
 
 export const submitPublicRequest = createRoute({
-    // No authentication middleware - this is a public route
+    middleware: [authenticated],
     tags: [...TAGS],
     method: 'post',
     path: '/request/{slug}',
@@ -67,6 +68,7 @@ export const submitPublicRequest = createRoute({
         [HttpStatusCodes.NOT_FOUND]: jsonApiErrorContent('Shipper not found'),
         [HttpStatusCodes.UNPROCESSABLE_ENTITY]: jsonApiErrorContent('Validation error'),
         [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('Internal server error'),
+        [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('Unauthorized'),
     },
 });
 

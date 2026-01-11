@@ -21,7 +21,7 @@ export interface OnboardInput {
 
 export interface UpdateProfileInput {
     businessName?: string;
-    logoUrl?: string | null;
+
     street?: string | null;
     city?: string | null;
     state?: string | null;
@@ -178,7 +178,6 @@ export class AuthService extends Service {
                 .update(user)
                 .set({
                     businessName: input.businessName ?? existingUser.businessName,
-                    logoUrl: input.logoUrl !== undefined ? input.logoUrl : existingUser.logoUrl,
                     street: input.street !== undefined ? input.street : existingUser.street,
                     city: input.city !== undefined ? input.city : existingUser.city,
                     state: input.state !== undefined ? input.state : existingUser.state,

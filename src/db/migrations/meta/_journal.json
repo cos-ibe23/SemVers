@@ -22,6 +22,13 @@
       "when": 1768148238396,
       "tag": "0002_even_bedlam",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1768151617495,
+      "tag": "0003_true_proteus",
+      "breakpoints": true
     }
   ]
 }

@@ -16,7 +16,7 @@ export interface CreateUserOptions {
     role?: UserRole;
     // Business fields
     businessName?: string | null;
-    logoUrl?: string | null;
+
     street?: string | null;
     city?: string | null;
     state?: string | null;
@@ -57,7 +57,7 @@ export class UserFactory {
                 role: options.role ?? UserRoles.SHIPPER,
                 // Business fields
                 businessName: options.businessName ?? null,
-                logoUrl: options.logoUrl ?? null,
+
                 street: options.street ?? null,
                 city: options.city ?? null,
                 state: options.state ?? null,
@@ -136,7 +136,7 @@ export const userFactory = {
             image: options.image ?? null,
             role: options.role ?? UserRoles.SHIPPER,
             businessName: options.businessName ?? null,
-            logoUrl: options.logoUrl ?? null,
+
             street: options.street ?? null,
             city: options.city ?? null,
             state: options.state ?? null,

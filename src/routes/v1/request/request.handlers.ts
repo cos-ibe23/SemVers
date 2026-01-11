@@ -10,7 +10,7 @@ import type {
 export const getShipperBySlug: AppRouteHandler<GetShipperBySlugRoute> = async (c) => {
     try {
         const { slug } = c.req.valid('param');
-        const service = new PublicRequestService();
+        const service = new PublicRequestService({ context: c });
         const result = await service.getShipperBySlug(slug);
 
         return c.json(result, HttpStatusCodes.OK);
@@ -33,7 +33,7 @@ export const submitPublicRequest: AppRouteHandler<SubmitPublicRequestRoute> = as
     try {
         const { slug } = c.req.valid('param');
         const body = c.req.valid('json');
-        const service = new PublicRequestService();
+        const service = new PublicRequestService({ context: c });
         const result = await service.submitRequest(slug, body);
 
         return c.json(result, HttpStatusCodes.CREATED);

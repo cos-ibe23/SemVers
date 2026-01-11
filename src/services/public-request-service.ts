@@ -13,6 +13,7 @@ import { ApiError, NotFoundError, BadRequestError } from '../lib/errors';
 import { logger } from '../lib/logger';
 import { UserRoles } from '../permissions/types';
 import { PickupRequestStatus, Currency, type CurrencyType } from '../constants/enums';
+import { Service, type ServiceOptions } from './service';
 
 export interface PublicFxRate {
     fromCurrency: CurrencyType;
@@ -24,7 +25,6 @@ export interface ShipperPublicInfo {
     id: string;
     name: string;
     businessName: string | null;
-    logoUrl: string | null;
     city: string | null;
     state: string | null;
     country: string | null;
@@ -32,9 +32,9 @@ export interface ShipperPublicInfo {
 }
 
 export interface CreatePublicRequestInput {
-    // Client info
-    name: string;
-    email: string;
+    // Client info (Optional/Ignored if authenticated, but kept for schema compatibility or if passed)
+    name?: string;
+    email?: string;
     phone?: string; // Full phone number (e.g., "+1-555-123-4567")
 
     // Pickup details
@@ -53,14 +53,13 @@ export interface CreatePublicRequestInput {
 }
 
 /**
- * PublicRequestService - Handles public (unauthenticated) pickup request submissions.
- *
- * This service does NOT use the base Service class because:
- * 1. It handles public (unauthenticated) requests
- * 2. It creates users and relationships on behalf of clients
- * 3. It uses its own database connection without user context
+ * PublicRequestService - Handles pickup request submissions (now authenticated).
  */
-export class PublicRequestService {
+export class PublicRequestService extends Service {
+    constructor(options: ServiceOptions = {}) {
+        super(options);
+    }
+
     /**
      * Get shipper info by their request slug.
      * This is used to display the shipper's info on the public request form.
@@ -72,7 +71,7 @@ export class PublicRequestService {
                     id: user.id,
                     name: user.name,
                     businessName: user.businessName,
-                    logoUrl: user.logoUrl,
+
                     city: user.city,
                     state: user.state,
                     country: user.country,
@@ -119,14 +118,14 @@ export class PublicRequestService {
                 id: shipper.id,
                 name: shipper.name,
                 businessName: shipper.businessName,
-                logoUrl: shipper.logoUrl,
+
                 city: shipper.city,
                 state: shipper.state,
                 country: shipper.country,
                 fxRates: activeFxRates.map((rate) => ({
                     fromCurrency: rate.fromCurrency as CurrencyType,
                     toCurrency: rate.toCurrency as CurrencyType,
-                    rate: rate.clientRate, // Only expose client rate publicly
+                    rate: rate.clientRate,
                 })),
             };
         } catch (error) {
@@ -137,11 +136,11 @@ export class PublicRequestService {
     }
 
     /**
-     * Submit a pickup request from a public form.
+     * Submit a pickup request (Authenticated).
      *
      * Flow:
      * 1. Lookup shipper by slug
-     * 2. Find or create client user by email
+     * 2. Get authenticated client user
      * 3. Link client to shipper if not already linked
      * 4. Create pickup request
      */
@@ -153,12 +152,8 @@ export class PublicRequestService {
             // 1. Get shipper
             const shipper = await this.getShipperBySlug(slug);
 
-            // 2. Find or create client
-            const client = await this.findOrCreateClient({
-                name: input.name,
-                email: input.email,
-                phone: input.phone,
-            });
+            // 2. Get authenticated client
+            const client = this.requireUser();
 
             // 3. Link client to shipper
             await this.linkClientToShipper(shipper.id, client.id);
@@ -169,9 +164,9 @@ export class PublicRequestService {
                 .values({
                     shipperUserId: shipper.id,
                     clientUserId: client.id,
-                    clientName: input.name,
-                    clientEmail: input.email,
-                    clientPhone: input.phone || null,
+                    clientName: client.name, // Use profile name
+                    clientEmail: client.email, // Use profile email
+                    clientPhone: input.phone || client.phoneNumber || null, // Prefer input phone, fallback to profile
                     numberOfItems: input.numberOfItems,
                     meetupLocation: input.meetupLocation,
                     pickupTime: new Date(input.pickupTime),
@@ -191,7 +186,7 @@ export class PublicRequestService {
                     shipperId: shipper.id,
                     clientId: client.id,
                 },
-                'Public pickup request submitted'
+                'Pickup request submitted (authenticated)'
             );
 
             return pickupRequestResponseSchema.parse(request);
@@ -200,47 +195,6 @@ export class PublicRequestService {
             apiError.log({ method: 'PublicRequestService.submitRequest' });
             throw apiError;
         }
-    }
-
-    /**
-     * Find or create a client user by email.
-     */
-    private async findOrCreateClient(input: {
-        name: string;
-        email: string;
-        phone?: string;
-    }): Promise<{ id: string; email: string }> {
-        // Check if user exists
-        const [existingUser] = await db
-            .select({ id: user.id, email: user.email })
-            .from(user)
-            .where(eq(user.email, input.email))
-            .limit(1);
-
-        if (existingUser) {
-            return existingUser;
-        }
-
-        // Create new client user
-        const clientId = crypto.randomUUID();
-        const [newUser] = await db
-            .insert(user)
-            .values({
-                id: clientId,
-                name: input.name,
-                email: input.email,
-                emailVerified: false,
-                role: UserRoles.CLIENT,
-                phoneNumber: input.phone || null,
-            })
-            .returning({ id: user.id, email: user.email });
-
-        logger.info(
-            { clientId: newUser.id, email: newUser.email },
-            'Client user auto-created from public request'
-        );
-
-        return newUser;
     }
 
     /**

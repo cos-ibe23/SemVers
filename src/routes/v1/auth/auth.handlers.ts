@@ -6,7 +6,7 @@ import type { GetMeRoute, OnboardRoute, UpdateProfileRoute } from './auth.routes
 
 export const getMe: AppRouteHandler<GetMeRoute> = async (c) => {
     try {
-        const user = c.get('authenticatedUser')!;
+
         const session = c.get('session')!;
 
         const service = new AuthService({ context: c });

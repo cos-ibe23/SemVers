@@ -5,6 +5,7 @@ import * as routes from './items.routes';
 const router = createRouter()
     .openapi(routes.listPickupItems, handlers.listPickupItems)
     .openapi(routes.addPickupItem, handlers.addPickupItem)
+    .openapi(routes.getTemplates, handlers.getTemplates)
     .openapi(routes.getItem, handlers.getItem)
     .openapi(routes.updateItem, handlers.updateItem)
     .openapi(routes.deleteItem, handlers.deleteItem);

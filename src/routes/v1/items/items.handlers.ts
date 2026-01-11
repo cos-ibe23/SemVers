@@ -1,10 +1,12 @@
 import { ItemService } from '../../../services/item-service';
+import { ITEM_TEMPLATES } from '../../../constants/item-templates';
 import { ApiError } from '../../../lib/errors';
 import * as HttpStatusCodes from '../../../lib/http-status-codes';
 import type { AppRouteHandler } from '../../../lib/types';
 import type {
     ListPickupItemsRoute,
     AddPickupItemRoute,
+    GetTemplatesRoute,
     GetItemRoute,
     UpdateItemRoute,
     DeleteItemRoute,
@@ -58,6 +60,16 @@ export const addPickupItem: AppRouteHandler<AddPickupItemRoute> = async (c) => {
             default:
                 return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
         }
+    }
+};
+
+export const getTemplates: AppRouteHandler<GetTemplatesRoute> = async (c) => {
+    try {
+        return c.json(ITEM_TEMPLATES, HttpStatusCodes.OK);
+    } catch (error: unknown) {
+        const apiError = ApiError.parse(error);
+        apiError.log({ handler: 'getTemplates' });
+        return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
     }
 };
 

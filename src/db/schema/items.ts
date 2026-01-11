@@ -61,6 +61,15 @@ export const itemResponseSchema = z.object({
 
 export type ItemResponse = z.infer<typeof itemResponseSchema>;
 
+export const itemTemplateSchema = z.object({
+    id: z.string(),
+    category: z.string(),
+    estimatedWeightLb: z.number(),
+    shippingCostUsd: z.number(),
+});
+
+export type ItemTemplate = z.infer<typeof itemTemplateSchema>;
+
 // Request schemas
 export const createItemRequestSchema = z.object({
     category: z.string().min(1).max(100),

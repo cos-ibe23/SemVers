@@ -10,6 +10,7 @@ import {
     itemResponseSchema,
     createItemRequestSchema,
     updateItemRequestSchema,
+    itemTemplateSchema,
 } from '../../../db/schema/items';
 
 const TAGS = ['v1-items'] as const;
@@ -50,6 +51,18 @@ export const addPickupItem = createRoute({
         [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('Unauthorized'),
         [HttpStatusCodes.FORBIDDEN]: jsonApiErrorContent('Forbidden'),
         [HttpStatusCodes.NOT_FOUND]: jsonApiErrorContent('Pickup not found'),
+        [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('Internal server error'),
+    },
+});
+
+export const getTemplates = createRoute({
+    middleware: [authenticated],
+    tags: [...TAGS],
+    method: 'get',
+    path: '/items/templates',
+    responses: {
+        [HttpStatusCodes.OK]: jsonContent(z.array(itemTemplateSchema), 'List of item templates'),
+        [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('Unauthorized'),
         [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('Internal server error'),
     },
 });
@@ -115,6 +128,7 @@ export const deleteItem = createRoute({
 
 export type ListPickupItemsRoute = typeof listPickupItems;
 export type AddPickupItemRoute = typeof addPickupItem;
+export type GetTemplatesRoute = typeof getTemplates;
 export type GetItemRoute = typeof getItem;
 export type UpdateItemRoute = typeof updateItem;
 export type DeleteItemRoute = typeof deleteItem;

@@ -15,6 +15,13 @@
       "when": 1768084637201,
       "tag": "0001_amazing_ronan",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1768148238396,
+      "tag": "0002_even_bedlam",
+      "breakpoints": true
     }
   ]
 }

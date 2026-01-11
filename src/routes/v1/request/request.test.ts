@@ -114,4 +114,52 @@ describe('Public Request API (Integration)', () => {
 
         expect(response.status).toBe(HttpStatusCodes.NOT_FOUND);
     });
+
+    it('should accept links/imeis as arrays and store correctly', async () => {
+        const payload = {
+            numberOfItems: 3,
+            meetupLocation: 'Lagos',
+            pickupTime: new Date().toISOString(),
+            links: ['https://example.com/1', 'https://example.com/2'],
+            imeis: ['123456789012345', '987654321098765'],
+        };
+
+        const response = await app.request(`/v1/request/${shipperSlug}`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                ...clientAuth.headers 
+            },
+            body: JSON.stringify(payload),
+        });
+
+        expect(response.status).toBe(HttpStatusCodes.CREATED);
+        const body = await response.json();
+        expect(body.links).toEqual(['https://example.com/1', 'https://example.com/2']);
+        expect(body.imeis).toEqual(['123456789012345', '987654321098765']);
+    });
+
+    it('should accept links/imeis as comma-separated strings and store as arrays', async () => {
+        const payload = {
+            numberOfItems: 2,
+            meetupLocation: 'Abuja',
+            pickupTime: new Date().toISOString(),
+            links: 'https://example.com/a, https://example.com/b',
+            imeis: '11111, 22222',
+        };
+
+        const response = await app.request(`/v1/request/${shipperSlug}`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                ...clientAuth.headers 
+            },
+            body: JSON.stringify(payload),
+        });
+
+        expect(response.status).toBe(HttpStatusCodes.CREATED);
+        const body = await response.json();
+        expect(body.links).toEqual(['https://example.com/a', 'https://example.com/b']);
+        expect(body.imeis).toEqual(['11111', '22222']);
+    });
 });

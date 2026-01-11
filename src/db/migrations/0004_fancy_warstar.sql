@@ -1,0 +1,2 @@
+ALTER TABLE "pickup_requests" ALTER COLUMN "links" SET DATA TYPE text[] USING string_to_array("links", ',');--> statement-breakpoint
+ALTER TABLE "pickup_requests" ALTER COLUMN "imeis" SET DATA TYPE text[] USING string_to_array("imeis", ',');

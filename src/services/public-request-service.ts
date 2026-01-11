@@ -32,24 +32,17 @@ export interface ShipperPublicInfo {
 }
 
 export interface CreatePublicRequestInput {
-    // Client info (Optional/Ignored if authenticated, but kept for schema compatibility or if passed)
     name?: string;
     email?: string;
-    phone?: string; // Full phone number (e.g., "+1-555-123-4567")
-
-    // Pickup details
+    phone?: string;
     numberOfItems: number;
     meetupLocation: string;
-    pickupTime: string; // ISO datetime string
-
-    // Seller info (optional - stored as metadata)
+    pickupTime: string;
     sellerMetadata?: SellerMetadata;
-
-    // Item details (optional)
-    agreedPrice?: number; // Always in USD for MVP
+    agreedPrice?: number;
     itemDescription?: string;
-    links?: string;
-    imeis?: string;
+    links?: string | string[];
+    imeis?: string | string[];
 }
 
 /**
@@ -71,7 +64,6 @@ export class PublicRequestService extends Service {
                     id: user.id,
                     name: user.name,
                     businessName: user.businessName,
-
                     city: user.city,
                     state: user.state,
                     country: user.country,
@@ -99,7 +91,6 @@ export class PublicRequestService extends Service {
                 throw new BadRequestError('This shipper has not completed onboarding');
             }
 
-            // Fetch shipper's active FX rates (only client rate - not cost rate)
             const activeFxRates = await db
                 .select({
                     fromCurrency: fxRates.fromCurrency,
@@ -118,7 +109,6 @@ export class PublicRequestService extends Service {
                 id: shipper.id,
                 name: shipper.name,
                 businessName: shipper.businessName,
-
                 city: shipper.city,
                 state: shipper.state,
                 country: shipper.country,
@@ -135,38 +125,24 @@ export class PublicRequestService extends Service {
         }
     }
 
-    /**
-     * Submit a pickup request (Authenticated).
-     *
-     * Flow:
-     * 1. Lookup shipper by slug
-     * 2. Get authenticated client user
-     * 3. Link client to shipper if not already linked
-     * 4. Create pickup request
-     */
     public async submitRequest(
         slug: string,
         input: CreatePublicRequestInput
     ): Promise<PickupRequestResponse> {
         try {
-            // 1. Get shipper
             const shipper = await this.getShipperBySlug(slug);
-
-            // 2. Get authenticated client
             const client = this.requireUser();
 
-            // 3. Link client to shipper
             await this.linkClientToShipper(shipper.id, client.id);
 
-            // 4. Create pickup request
             const [request] = await db
                 .insert(pickupRequests)
                 .values({
                     shipperUserId: shipper.id,
                     clientUserId: client.id,
-                    clientName: client.name, // Use profile name
-                    clientEmail: client.email, // Use profile email
-                    clientPhone: input.phone || client.phoneNumber || null, // Prefer input phone, fallback to profile
+                    clientName: client.name,
+                    clientEmail: client.email,
+                    clientPhone: input.phone || client.phoneNumber || null,
                     numberOfItems: input.numberOfItems,
                     meetupLocation: input.meetupLocation,
                     pickupTime: new Date(input.pickupTime),
@@ -174,20 +150,19 @@ export class PublicRequestService extends Service {
                     agreedPrice: input.agreedPrice?.toString() || null,
                     agreedPriceCurrency: Currency.USD,
                     itemDescription: input.itemDescription || null,
-                    links: input.links || null,
-                    imeis: input.imeis || null,
+                    links: Array.isArray(input.links)
+                        ? input.links
+                        : input.links
+                          ? input.links.split(',').map((s) => s.trim())
+                          : null,
+                    imeis: Array.isArray(input.imeis)
+                        ? input.imeis
+                        : input.imeis
+                          ? input.imeis.split(',').map((s) => s.trim())
+                          : null,
                     status: PickupRequestStatus.PENDING,
                 })
                 .returning();
-
-            logger.info(
-                {
-                    requestId: request.id,
-                    shipperId: shipper.id,
-                    clientId: client.id,
-                },
-                'Pickup request submitted (authenticated)'
-            );
 
             return pickupRequestResponseSchema.parse(request);
         } catch (error) {
@@ -197,11 +172,7 @@ export class PublicRequestService extends Service {
         }
     }
 
-    /**
-     * Link a client to a shipper if not already linked.
-     */
     private async linkClientToShipper(shipperId: string, clientId: string): Promise<void> {
-        // Check if relationship exists (including soft-deleted)
         const [existing] = await db
             .select()
             .from(shipperClients)
@@ -214,7 +185,6 @@ export class PublicRequestService extends Service {
             .limit(1);
 
         if (existing) {
-            // If soft-deleted, restore it
             if (existing.deletedAt) {
                 await db
                     .update(shipperClients)
@@ -229,15 +199,9 @@ export class PublicRequestService extends Service {
             return;
         }
 
-        // Create new relationship
         await db.insert(shipperClients).values({
             shipperId,
             clientId,
         });
-
-        logger.info(
-            { shipperId, clientId },
-            'Client linked to shipper from public request'
-        );
     }
 }

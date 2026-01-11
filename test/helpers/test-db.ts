@@ -63,7 +63,6 @@ export async function cleanTestDb() {
 
     // Pickup request tables
     await db.delete(schema.paymentProofs);
-    await db.delete(schema.pickupRequestItems);
     await db.delete(schema.pickupRequests);
 
     // Shipment tables

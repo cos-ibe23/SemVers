@@ -29,6 +29,20 @@
       "when": 1768151617495,
       "tag": "0003_true_proteus",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1768170003998,
+      "tag": "0004_fancy_warstar",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1768170449205,
+      "tag": "0005_brainy_the_leader",
+      "breakpoints": true
     }
   ]
 }

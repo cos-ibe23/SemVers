@@ -1,130 +1,146 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { getTestDb, cleanTestDb, closeTestDb } from '@test/helpers';
+import { createIntegrationTestApp, signupAndLogin } from '@test/helpers/integration';
 
-const API_URL = 'http://localhost:4000/v1';
+describe('Vouching System Flow (Integration)', () => {
+    const app = createIntegrationTestApp();
+    
+    // Store auth headers for each user
+    let requesterAuth: { headers: Record<string, string>, user: any };
+    let voucher1Auth: { headers: Record<string, string>, user: any };
+    let voucher2Auth: { headers: Record<string, string>, user: any };
+    
+    let vouchId1: number;
+    let vouchId2: number;
 
-// Helpers to generate unique emails
-const r = () => Math.floor(Math.random() * 100000);
-const email = (prefix: string) => `${prefix}-${r()}@test.com`;
-
-let requesterToken: string;
-let voucher1Token: string;
-let voucher2Token: string;
-let requesterId: string;
-let vouchId1: number;
-let vouchId2: number;
-
-const requesterEmail = email('requester');
-const voucher1Email = email('voucher1');
-const voucher2Email = email('voucher2');
-const password = 'password123';
-
-async function signupAndLogin(userEmail: string, name: string) {
-    // Signup
-    await fetch(`${API_URL}/auth/sign-up/email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userEmail, password, name }),
-    });
-
-    // Login
-    const res = await fetch(`${API_URL}/auth/sign-in/email`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: userEmail, password }),
-    });
-    const data = await res.json();
-    return { token: data.token, id: data.user.id };
-}
-
-describe('Vouching System Flow', () => {
     beforeAll(async () => {
-        // Create 3 users
-        const v1 = await signupAndLogin(voucher1Email, 'Voucher One');
-        voucher1Token = v1.token;
+        await cleanTestDb();
 
-        const v2 = await signupAndLogin(voucher2Email, 'Voucher Two');
-        voucher2Token = v2.token;
-
-        const req = await signupAndLogin(requesterEmail, 'Requester User');
-        requesterToken = req.token;
-        requesterId = req.id;
-    });
-
-    it('should onboard requester and create vouch requests', async () => {
-        const res = await fetch(`${API_URL}/auth/onboard`, {
+        // 1. Setup Voucher 1 (Signup + Onboard)
+        voucher1Auth = await signupAndLogin('voucher1@test.com', 'Voucher One');
+        const v1Onboard = await app.request('/v1/auth/onboard', {
             method: 'POST',
             headers: { 
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${requesterToken}` 
+                ...voucher1Auth.headers 
+            },
+            body: JSON.stringify({
+                businessName: 'Voucher One Biz',
+                city: 'Lagos',
+                country: 'Nigeria'
+            })
+        });
+        expect(v1Onboard.status).toBe(200);
+
+        // 2. Setup Voucher 2 (Signup + Onboard)
+        voucher2Auth = await signupAndLogin('voucher2@test.com', 'Voucher Two');
+        const v2Onboard = await app.request('/v1/auth/onboard', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                ...voucher2Auth.headers 
+            },
+            body: JSON.stringify({
+                businessName: 'Voucher Two Biz',
+                city: 'Abuja',
+                country: 'Nigeria'
+            })
+        });
+        expect(v2Onboard.status).toBe(200);
+
+        // 3. Setup Requester (Signup only, not onboarded yet)
+        requesterAuth = await signupAndLogin('requester@test.com', 'Requester User');
+    });
+
+    afterAll(async () => {
+        await closeTestDb();
+    });
+
+    it('should onboard requester and create vouch requests', async () => {
+        const res = await app.request('/v1/auth/onboard', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                ...requesterAuth.headers
             },
             body: JSON.stringify({
                 businessName: 'Requester Biz',
                 role: 'CLIENT',
-                voucherEmails: [voucher1Email, voucher2Email]
+                voucherEmails: [voucher1Auth.user.email, voucher2Auth.user.email]
             }),
         });
-        const data = await res.json();
+
         expect(res.status).toBe(200);
+        const data = await res.json();
         expect(data.verificationStatus).toBe('PENDING_VOUCH');
     });
 
     it('Voucher 1 should see pending request', async () => {
-        const res = await fetch(`${API_URL}/vouchers/pending`, {
-            headers: { 'Authorization': `Bearer ${voucher1Token}` } 
+        const res = await app.request('/v1/vouchers/pending', {
+            method: 'GET',
+            headers: voucher1Auth.headers,
         });
-        const data = await res.json();
+        
         expect(res.status).toBe(200);
+        const data = await res.json();
         expect(Array.isArray(data)).toBe(true);
         
-        const myRequest = data.find((r: any) => r.requesterId === requesterId);
+        const myRequest = data.find((r: any) => r.requesterId === requesterAuth.user.id);
         expect(myRequest).toBeDefined();
         vouchId1 = myRequest.id;
     });
 
     it('Voucher 1 should approve request', async () => {
-        const res = await fetch(`${API_URL}/vouchers/${vouchId1}/approve`, {
+        const res = await app.request(`/v1/vouchers/${vouchId1}/approve`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${voucher1Token}` } 
+            headers: voucher1Auth.headers,
         });
-        const data = await res.json();
+        
         expect(res.status).toBe(200);
+        const data = await res.json();
         expect(data.success).toBe(true);
     });
 
     it('Voucher 1 should see request in history', async () => {
-        const res = await fetch(`${API_URL}/vouchers/history`, {
-            headers: { 'Authorization': `Bearer ${voucher1Token}` } 
+        const res = await app.request('/v1/vouchers/history', {
+            method: 'GET',
+            headers: voucher1Auth.headers,
         });
+        
         const data = await res.json();
-        const myRequest = data.find((r: any) => r.requesterId === requesterId);
+        const myRequest = data.find((r: any) => r.requesterId === requesterAuth.user.id);
         expect(myRequest).toBeDefined();
         expect(myRequest.status).toBe('APPROVED');
     });
 
     it('Voucher 2 should see pending request', async () => {
-        const res = await fetch(`${API_URL}/vouchers/pending`, {
-            headers: { 'Authorization': `Bearer ${voucher2Token}` } 
+        const res = await app.request('/v1/vouchers/pending', {
+            method: 'GET',
+            headers: voucher2Auth.headers,
         });
+
         const data = await res.json();
-        const myRequest = data.find((r: any) => r.requesterId === requesterId);
+        const myRequest = data.find((r: any) => r.requesterId === requesterAuth.user.id);
         expect(myRequest).toBeDefined();
         vouchId2 = myRequest.id;
     });
 
     it('Voucher 2 should approve request', async () => {
-        const res = await fetch(`${API_URL}/vouchers/${vouchId2}/approve`, {
+        const res = await app.request(`/v1/vouchers/${vouchId2}/approve`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${voucher2Token}` } 
+            headers: voucher2Auth.headers,
         });
         expect(res.status).toBe(200);
     });
 
     it('Requester status should now be VERIFIED', async () => {
-        const res = await fetch(`${API_URL}/auth/me`, {
-            headers: { 'Authorization': `Bearer ${requesterToken}` } 
+        const res = await app.request('/v1/auth/me', {
+            method: 'GET',
+            headers: requesterAuth.headers,
         });
-        const data = await res.json();
+        
         expect(res.status).toBe(200);
+        const data = await res.json();
         expect(data.user.verificationStatus).toBe('VERIFIED');
     });
 });

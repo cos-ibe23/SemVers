@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { createRouter } from '../lib/create-app';
-import indexRouter from './index.route';
+import { createIntegrationTestApp } from '@test/helpers/integration';
 
-const app = createRouter();
-app.route('/', indexRouter);
+describe('Health endpoint (Integration)', () => {
+    const app = createIntegrationTestApp();
 
-describe('Health endpoint', () => {
     describe('GET /health', () => {
         it('should return 200 with ok status', async () => {
             const response = await app.request('/health', {

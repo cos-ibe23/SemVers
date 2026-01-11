@@ -1,38 +1,40 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
-import { createTestApp, getTestDb, cleanTestDb, closeTestDb, mockAuthMiddleware } from '@test/helpers';
+import { getTestDb, cleanTestDb, closeTestDb } from '@test/helpers';
+import { createIntegrationTestApp, signupAndLogin } from '@test/helpers/integration';
 import { createUserFactory, UserFactory, type User } from '@test/factories';
 import * as HttpStatusCodes from '../../../lib/http-status-codes';
-import { pickupRequests } from '../../../db/schema/pickup-requests';
-import v1PublicRequestRouter from './request.index';
-import { eq } from 'drizzle-orm';
 import { fxRates } from '../../../db/schema/fx-rates';
+import { user } from '../../../db/schema/auth'; // For role update
+import { eq } from 'drizzle-orm';
 
-describe('Public Request API', () => {
+describe('Public Request API (Integration)', () => {
     const db = getTestDb();
-    let app: ReturnType<typeof createTestApp>;
+    const app = createIntegrationTestApp();
     let userFactory: UserFactory;
     
     let shipper: User;
-    let client: User;
+    let clientAuth: { headers: Record<string, string>, user: any };
     const shipperSlug = 'test-shipper-slug';
 
     beforeEach(async () => {
         await cleanTestDb();
         userFactory = createUserFactory(db);
-        app = createTestApp();
         
-        // Create Shippers
+        // Create Shipper (Target)
         shipper = await userFactory.createShipper({
             requestSlug: shipperSlug,
             businessName: 'Test Shipper Business',
             onboardedAt: new Date(),
         });
 
-        // Create Client
-        client = await userFactory.createClient({
-            email: 'client@example.com',
-            name: 'Test Client',
-        });
+        // Create Client (Logged in user)
+        clientAuth = await signupAndLogin('client@example.com', 'Test Client');
+        
+        // Update client role to CLIENT (signup defaults to SHIPPER)
+        await db.update(user)
+            .set({ role: 'CLIENT' })
+            .where(eq(user.id, clientAuth.user.id));
+        clientAuth.user.role = 'CLIENT'; // Update local object
 
         // Set active FX rates for shipper
         await db.insert(fxRates).values({
@@ -43,10 +45,6 @@ describe('Public Request API', () => {
             clientRate: '1600',
             isActive: true,
         });
-        
-        // Mount router with mocked auth (defaulting to client)
-        app.use('*', mockAuthMiddleware(client));
-        app.route('/', v1PublicRequestRouter);
     });
 
     afterAll(async () => {
@@ -63,36 +61,33 @@ describe('Public Request API', () => {
             email: 'wrong@example.com',
         };
 
-        const response = await app.request(`/request/${shipperSlug}`, {
+        const response = await app.request(`/v1/request/${shipperSlug}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                ...clientAuth.headers 
+            },
             body: JSON.stringify(payload),
         });
 
         expect(response.status).toBe(HttpStatusCodes.CREATED);
         const body = await response.json();
-        expect(body.clientUserId).toBe(client.id);
+        expect(body.clientUserId).toBe(clientAuth.user.id);
         expect(body.shipperUserId).toBe(shipper.id);
         // Verify profile data was used
-        expect(body.clientName).toBe(client.name);
-        expect(body.clientEmail).toBe(client.email);
+        expect(body.clientName).toBe(clientAuth.user.name);
+        expect(body.clientEmail).toBe(clientAuth.user.email);
         expect(body.status).toBe('PENDING');
     });
 
     it('should return 401 if not logged in', async () => {
-        // Create new app instance without auth middleware for this test?
-        // Or override middleware?
-        // Easies way is to recreate app
-        app = createTestApp();
-        app.route('/', v1PublicRequestRouter);
-
         const payload = {
             numberOfItems: 1,
             meetupLocation: 'Nowhere',
             pickupTime: new Date().toISOString(),
         };
 
-        const response = await app.request(`/request/${shipperSlug}`, {
+        const response = await app.request(`/v1/request/${shipperSlug}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload),
@@ -108,9 +103,12 @@ describe('Public Request API', () => {
             pickupTime: new Date().toISOString(),
         };
 
-        const response = await app.request(`/request/invalid-slug`, {
+        const response = await app.request(`/v1/request/invalid-slug`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                ...clientAuth.headers
+            },
             body: JSON.stringify(payload),
         });
 

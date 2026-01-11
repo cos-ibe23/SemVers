@@ -1,22 +1,16 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
-import { createTestApp, mockAuthMiddleware, getTestDb, cleanTestDb, closeTestDb } from '@test/helpers';
-import { createUserFactory, UserFactory } from '@test/factories';
+import { getTestDb, cleanTestDb, closeTestDb } from '@test/helpers';
+import { createIntegrationTestApp, signupAndLogin } from '@test/helpers/integration';
 import { UserRoles } from '../../../permissions/types';
-import * as routes from './auth.routes';
-import * as handlers from './auth.handlers';
 
-
-
-
-
-describe('Auth Routes', () => {
-    const db = getTestDb();
-    let userFactory: UserFactory;
+describe('Auth Routes (Integration)', () => {
+    const app = createIntegrationTestApp();
+    let auth: { headers: Record<string, string>, user: any };
 
     beforeEach(async () => {
         await cleanTestDb();
-        userFactory = createUserFactory(db);
-        UserFactory.resetCounter();
+        // Create a fresh user for each test
+        auth = await signupAndLogin('test@example.com', 'Test User');
     });
 
     afterAll(async () => {
@@ -25,11 +19,7 @@ describe('Auth Routes', () => {
 
     describe('GET /auth/me', () => {
         it('should return 401 without authentication', async () => {
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(null));
-            app.openapi(routes.getMe, handlers.getMe);
-
-            const response = await app.request('/auth/me', {
+            const response = await app.request('/v1/auth/me', {
                 method: 'GET',
             });
 
@@ -39,54 +29,51 @@ describe('Auth Routes', () => {
         });
 
         it('should return user without business fields when not onboarded', async () => {
-            const user = await userFactory.createShipper({
-                name: 'Test User',
-                email: 'test@example.com',
-            });
-
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(user));
-            app.openapi(routes.getMe, handlers.getMe);
-
-            const response = await app.request('/auth/me', {
+            const response = await app.request('/v1/auth/me', {
                 method: 'GET',
+                headers: auth.headers,
             });
 
             expect(response.status).toBe(200);
             const body = await response.json();
 
             expect(body).toHaveProperty('user');
-            expect(body.user).toHaveProperty('id', user.id);
+            expect(body.user).toHaveProperty('id', auth.user.id);
             expect(body.user).toHaveProperty('name', 'Test User');
             expect(body.user).toHaveProperty('email', 'test@example.com');
-            expect(body.user).toHaveProperty('role', 'SHIPPER');
+            // Default role is SHIPPER usually, or whatever default is
+            expect(body.user).toHaveProperty('role', 'SHIPPER'); 
             expect(body.user).toHaveProperty('businessName', null);
             expect(body.user).toHaveProperty('onboardedAt', null);
 
             expect(body).toHaveProperty('session');
-            expect(body.session).toHaveProperty('userId', user.id);
+            expect(body.session).toHaveProperty('userId', auth.user.id);
         });
 
         it('should return user with business fields when onboarded', async () => {
-            const user = await userFactory.createOnboardedShipper({
-                name: 'Test User',
-                email: 'test@example.com',
-                businessName: 'Test Business',
-                city: 'Lagos',
+            // First onboard via API
+            await app.request('/v1/auth/onboard', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...auth.headers 
+                },
+                body: JSON.stringify({
+                    businessName: 'Test Business',
+                    city: 'Lagos',
+                    country: 'Nigeria'
+                }),
             });
 
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(user));
-            app.openapi(routes.getMe, handlers.getMe);
-
-            const response = await app.request('/auth/me', {
+            const response = await app.request('/v1/auth/me', {
                 method: 'GET',
+                headers: auth.headers,
             });
 
             expect(response.status).toBe(200);
             const body = await response.json();
 
-            expect(body.user.id).toBe(user.id);
+            expect(body.user.id).toBe(auth.user.id);
             expect(body.user.businessName).toBe('Test Business');
             expect(body.user.city).toBe('Lagos');
             expect(body.user.onboardedAt).not.toBeNull();
@@ -95,11 +82,7 @@ describe('Auth Routes', () => {
 
     describe('POST /auth/onboard', () => {
         it('should return 401 without authentication', async () => {
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(null));
-            app.openapi(routes.onboard, handlers.onboard);
-
-            const response = await app.request('/auth/onboard', {
+            const response = await app.request('/v1/auth/onboard', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -111,15 +94,12 @@ describe('Auth Routes', () => {
         });
 
         it('should validate required fields', async () => {
-            const user = await userFactory.createShipper();
-
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(user));
-            app.openapi(routes.onboard, handlers.onboard);
-
-            const response = await app.request('/auth/onboard', {
+            const response = await app.request('/v1/auth/onboard', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...auth.headers 
+                },
                 body: JSON.stringify({}),
             });
 
@@ -129,15 +109,12 @@ describe('Auth Routes', () => {
         });
 
         it('should onboard shipper successfully', async () => {
-            const user = await userFactory.createShipper();
-
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(user));
-            app.openapi(routes.onboard, handlers.onboard);
-
-            const response = await app.request('/auth/onboard', {
+            const response = await app.request('/v1/auth/onboard', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...auth.headers 
+                },
                 body: JSON.stringify({
                     businessName: 'New Business',
                     city: 'Lagos',
@@ -150,22 +127,33 @@ describe('Auth Routes', () => {
             expect(body.businessName).toBe('New Business');
             expect(body.city).toBe('Lagos');
             expect(body.country).toBe('Nigeria');
+            // slug generation logic test
             expect(body.requestSlug).toBe('new-business');
             expect(body.onboardedAt).toBeDefined();
         });
 
         it('should return 400 if already onboarded', async () => {
-            const user = await userFactory.createOnboardedShipper({
-                businessName: 'Existing Business',
+            // First onboard
+            await app.request('/v1/auth/onboard', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...auth.headers 
+                },
+                body: JSON.stringify({
+                    businessName: 'Existing Business',
+                    city: 'Lagos',
+                    country: 'Nigeria'
+                }),
             });
 
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(user));
-            app.openapi(routes.onboard, handlers.onboard);
-
-            const response = await app.request('/auth/onboard', {
+            // Try again
+            const response = await app.request('/v1/auth/onboard', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...auth.headers 
+                },
                 body: JSON.stringify({
                     businessName: 'New Business',
                 }),
@@ -177,17 +165,17 @@ describe('Auth Routes', () => {
         });
 
         it('should onboard client successfully', async () => {
-            const user = await userFactory.createClient();
+            // New user for client test
+            const clientAuth = await signupAndLogin('client@example.com', 'Client User');
 
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(user));
-            app.openapi(routes.onboard, handlers.onboard);
-
-            const response = await app.request('/auth/onboard', {
+            const response = await app.request('/v1/auth/onboard', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...clientAuth.headers 
+                },
                 body: JSON.stringify({
-                    businessName: 'New Business',
+                    businessName: 'Client Business',
                     role: 'CLIENT',
                 }),
             });
@@ -202,11 +190,7 @@ describe('Auth Routes', () => {
 
     describe('PATCH /auth/profile', () => {
         it('should return 401 without authentication', async () => {
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(null));
-            app.openapi(routes.updateProfile, handlers.updateProfile);
-
-            const response = await app.request('/auth/profile', {
+            const response = await app.request('/v1/auth/profile', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -218,18 +202,26 @@ describe('Auth Routes', () => {
         });
 
         it('should update user profile successfully', async () => {
-            const user = await userFactory.createShipper({
-                businessName: 'Old Business',
-                city: 'Old City',
+            // First onboard
+            await app.request('/v1/auth/onboard', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...auth.headers 
+                },
+                body: JSON.stringify({
+                    businessName: 'Old Business',
+                    city: 'Old City',
+                    country: 'Nigeria'
+                }),
             });
 
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(user));
-            app.openapi(routes.updateProfile, handlers.updateProfile);
-
-            const response = await app.request('/auth/profile', {
+            const response = await app.request('/v1/auth/profile', {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...auth.headers 
+                },
                 body: JSON.stringify({
                     businessName: 'Updated Business',
                     city: 'New City',
@@ -243,26 +235,38 @@ describe('Auth Routes', () => {
         });
 
         it('should allow clients to update business fields', async () => {
-            const user = await userFactory.createClient({
-                name: 'Test Client',
-            });
+             // New user for client test
+             const clientAuth = await signupAndLogin('client2@example.com', 'Client User 2');
 
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(user));
-            app.openapi(routes.updateProfile, handlers.updateProfile);
-
-            const response = await app.request('/auth/profile', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+             // Onboard as client
+             const onboardRes = await app.request('/v1/auth/onboard', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...clientAuth.headers 
+                },
                 body: JSON.stringify({
-                    businessName: 'Client Business',
+                    role: 'CLIENT',
+                    businessName: 'Client Business Initial', // Required field
+                }),
+            });
+            expect(onboardRes.status).toBe(200);
+
+            const response = await app.request('/v1/auth/profile', {
+                method: 'PATCH',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...clientAuth.headers 
+                },
+                body: JSON.stringify({
+                    businessName: 'Client Business Updated',
                     city: 'Client City',
                 }),
             });
 
             expect(response.status).toBe(200);
             const body = await response.json();
-            expect(body.businessName).toBe('Client Business');
+            expect(body.businessName).toBe('Client Business Updated');
             expect(body.city).toBe('Client City');
             expect(body.role).toBe(UserRoles.CLIENT);
         });

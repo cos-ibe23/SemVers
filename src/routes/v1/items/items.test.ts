@@ -1,38 +1,37 @@
 
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
-import { createTestApp, mockAuthMiddleware, getTestDb, cleanTestDb, closeTestDb } from '@test/helpers';
+import { getTestDb, cleanTestDb, closeTestDb } from '@test/helpers';
+import { createIntegrationTestApp, signupAndLogin } from '@test/helpers/integration';
 import { createUserFactory, UserFactory, type User } from '@test/factories';
 import { ITEM_TEMPLATES } from '../../../constants/item-templates';
 import * as HttpStatusCodes from '../../../lib/http-status-codes';
 import { pickups } from '../../../db/schema/pickups';
 import { items } from '../../../db/schema/items';
-import v1ItemsRouter from './items.index';
 import { eq } from 'drizzle-orm';
 
-describe('Items API', () => {
+describe('Items API (Integration)', () => {
     const db = getTestDb();
-    let app: ReturnType<typeof createTestApp>;
+    const app = createIntegrationTestApp();
     let userFactory: UserFactory;
     
-    let shipper: User;
+    let shipperAuth: { headers: Record<string, string>, user: any };
     let client: User;
     let pickupId: number;
 
     beforeEach(async () => {
         await cleanTestDb();
         userFactory = createUserFactory(db);
-        app = createTestApp();
         
-        shipper = await userFactory.create({ role: 'SHIPPER' });
-        client = await userFactory.create({ role: 'CLIENT' });
+        // 1. Shipper (Logged In)
+        shipperAuth = await signupAndLogin('shipper@example.com', 'Test Shipper');
         
-        // Mount router
-        app.use('*', mockAuthMiddleware(shipper));
-        app.route('/', v1ItemsRouter);
-
-        // Create a pickup
+        // 2. Client (Target for pickup)
+        // Use factory as we don't need to login as client
+        client = await userFactory.createClient();
+        
+        // 3. Create a pickup (Draft)
         const [pickup] = await db.insert(pickups).values({
-            ownerUserId: shipper.id,
+            ownerUserId: shipperAuth.user.id,
             clientUserId: client.id,
             status: 'DRAFT',
         }).returning();
@@ -45,8 +44,9 @@ describe('Items API', () => {
 
     describe('GET /items/templates', () => {
         it('should return item templates', async () => {
-            const response = await app.request('/items/templates', {
+            const response = await app.request('/v1/items/templates', {
                 method: 'GET',
+                headers: shipperAuth.headers,
             });
     
             expect(response.status).toBe(HttpStatusCodes.OK);
@@ -73,9 +73,12 @@ describe('Items API', () => {
                 clientShippingUsd: 30,
             };
 
-            const response = await app.request(`/pickups/${pickupId}/items`, {
+            const response = await app.request(`/v1/pickups/${pickupId}/items`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...shipperAuth.headers
+                },
                 body: JSON.stringify(payload),
             });
 
@@ -92,9 +95,12 @@ describe('Items API', () => {
                 category: 'Unknown Thing',
             };
 
-            const response = await app.request(`/pickups/${pickupId}/items`, {
+            const response = await app.request(`/v1/pickups/${pickupId}/items`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...shipperAuth.headers
+                },
                 body: JSON.stringify(payload),
             });
 
@@ -110,8 +116,9 @@ describe('Items API', () => {
                 { pickupId, category: 'Item 2' },
             ]);
 
-            const response = await app.request(`/pickups/${pickupId}/items`, {
+            const response = await app.request(`/v1/pickups/${pickupId}/items`, {
                 method: 'GET',
+                headers: shipperAuth.headers,
             });
 
             expect(response.status).toBe(HttpStatusCodes.OK);
@@ -125,8 +132,9 @@ describe('Items API', () => {
                 category: 'Single Item',
             }).returning();
 
-            const response = await app.request(`/items/${item.id}`, {
+            const response = await app.request(`/v1/items/${item.id}`, {
                 method: 'GET',
+                headers: shipperAuth.headers,
             });
 
             expect(response.status).toBe(HttpStatusCodes.OK);
@@ -141,9 +149,12 @@ describe('Items API', () => {
                 category: 'Old Category',
             }).returning();
 
-            const response = await app.request(`/items/${item.id}`, {
+            const response = await app.request(`/v1/items/${item.id}`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...shipperAuth.headers
+                },
                 body: JSON.stringify({
                     category: 'New Category',
                 }),
@@ -160,8 +171,9 @@ describe('Items API', () => {
                 category: 'To Delete',
             }).returning();
 
-            const response = await app.request(`/items/${item.id}`, {
+            const response = await app.request(`/v1/items/${item.id}`, {
                 method: 'DELETE',
+                headers: shipperAuth.headers,
             });
 
             expect(response.status).toBe(HttpStatusCodes.OK);

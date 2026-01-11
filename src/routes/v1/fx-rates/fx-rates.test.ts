@@ -1,19 +1,24 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
-import { createTestApp, mockAuthMiddleware, getTestDb, cleanTestDb, closeTestDb } from '@test/helpers';
+import { getTestDb, cleanTestDb, closeTestDb } from '@test/helpers';
+import { createIntegrationTestApp, signupAndLogin } from '@test/helpers/integration';
 import { createUserFactory, UserFactory } from '@test/factories';
 import { fxRates } from '../../../db/schema';
 import { Currency } from '../../../constants/enums';
-import * as routes from './fx-rates.routes';
-import * as handlers from './fx-rates.handlers';
 
-describe('FX Rates Routes', () => {
+describe('FX Rates Routes (Integration)', () => {
     const db = getTestDb();
+    const app = createIntegrationTestApp();
     let userFactory: UserFactory;
+    
+    let shipperAuth: { headers: Record<string, string>, user: any };
 
     beforeEach(async () => {
         await cleanTestDb();
         userFactory = createUserFactory(db);
         UserFactory.resetCounter();
+        
+        // Setup authenticated shipper
+        shipperAuth = await signupAndLogin('shipper@example.com', 'Test Shipper');
     });
 
     afterAll(async () => {
@@ -22,11 +27,7 @@ describe('FX Rates Routes', () => {
 
     describe('GET /fx-rates', () => {
         it('should return 401 without authentication', async () => {
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(null));
-            app.openapi(routes.listFxRates, handlers.listFxRates);
-
-            const response = await app.request('/fx-rates', {
+            const response = await app.request('/v1/fx-rates', {
                 method: 'GET',
             });
 
@@ -36,14 +37,9 @@ describe('FX Rates Routes', () => {
         });
 
         it('should return empty array for shipper with no rates', async () => {
-            const shipper = await userFactory.createShipper();
-
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(shipper));
-            app.openapi(routes.listFxRates, handlers.listFxRates);
-
-            const response = await app.request('/fx-rates', {
+            const response = await app.request('/v1/fx-rates', {
                 method: 'GET',
+                headers: shipperAuth.headers,
             });
 
             expect(response.status).toBe(200);
@@ -52,45 +48,36 @@ describe('FX Rates Routes', () => {
         });
 
         it('should return only shipper own rates', async () => {
-            const shipper1 = await userFactory.createShipper({ email: 'shipper1@test.com' });
             const shipper2 = await userFactory.createShipper({ email: 'shipper2@test.com' });
 
             // Create rates for both shippers
             await db.insert(fxRates).values([
-                { ownerUserId: shipper1.id, fromCurrency: Currency.USD, toCurrency: Currency.NGN, costRate: '1500.00', clientRate: '1600.00' },
+                { ownerUserId: shipperAuth.user.id, fromCurrency: Currency.USD, toCurrency: Currency.NGN, costRate: '1500.00', clientRate: '1600.00' },
                 { ownerUserId: shipper2.id, fromCurrency: Currency.USD, toCurrency: Currency.NGN, costRate: '1480.00', clientRate: '1580.00' },
             ]);
 
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(shipper1));
-            app.openapi(routes.listFxRates, handlers.listFxRates);
-
-            const response = await app.request('/fx-rates', {
+            const response = await app.request('/v1/fx-rates', {
                 method: 'GET',
+                headers: shipperAuth.headers,
             });
 
             expect(response.status).toBe(200);
             const body = await response.json();
             expect(body).toHaveLength(1);
-            expect(body[0].ownerUserId).toBe(shipper1.id);
+            expect(body[0].ownerUserId).toBe(shipperAuth.user.id);
             expect(body[0].costRate).toBe('1500.000000');
             expect(body[0].clientRate).toBe('1600.000000');
         });
 
         it('should filter by fromCurrency', async () => {
-            const shipper = await userFactory.createShipper();
-
             await db.insert(fxRates).values([
-                { ownerUserId: shipper.id, fromCurrency: Currency.USD, toCurrency: Currency.NGN, costRate: '1500.00', clientRate: '1600.00' },
-                { ownerUserId: shipper.id, fromCurrency: Currency.GBP, toCurrency: Currency.NGN, costRate: '1900.00', clientRate: '2000.00' },
+                { ownerUserId: shipperAuth.user.id, fromCurrency: Currency.USD, toCurrency: Currency.NGN, costRate: '1500.00', clientRate: '1600.00' },
+                { ownerUserId: shipperAuth.user.id, fromCurrency: Currency.GBP, toCurrency: Currency.NGN, costRate: '1900.00', clientRate: '2000.00' },
             ]);
 
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(shipper));
-            app.openapi(routes.listFxRates, handlers.listFxRates);
-
-            const response = await app.request('/fx-rates?fromCurrency=USD', {
+            const response = await app.request('/v1/fx-rates?fromCurrency=USD', {
                 method: 'GET',
+                headers: shipperAuth.headers,
             });
 
             expect(response.status).toBe(200);
@@ -102,11 +89,7 @@ describe('FX Rates Routes', () => {
 
     describe('GET /fx-rates/current', () => {
         it('should return 401 without authentication', async () => {
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(null));
-            app.openapi(routes.getCurrentFxRate, handlers.getCurrentFxRate);
-
-            const response = await app.request('/fx-rates/current', {
+            const response = await app.request('/v1/fx-rates/current', {
                 method: 'GET',
             });
 
@@ -114,14 +97,9 @@ describe('FX Rates Routes', () => {
         });
 
         it('should return null when no active rate exists', async () => {
-            const shipper = await userFactory.createShipper();
-
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(shipper));
-            app.openapi(routes.getCurrentFxRate, handlers.getCurrentFxRate);
-
-            const response = await app.request('/fx-rates/current', {
+            const response = await app.request('/v1/fx-rates/current', {
                 method: 'GET',
+                headers: shipperAuth.headers,
             });
 
             expect(response.status).toBe(200);
@@ -130,18 +108,13 @@ describe('FX Rates Routes', () => {
         });
 
         it('should return current active rate for currency pair', async () => {
-            const shipper = await userFactory.createShipper();
-
             await db.insert(fxRates).values([
-                { ownerUserId: shipper.id, fromCurrency: Currency.USD, toCurrency: Currency.NGN, costRate: '1500.00', clientRate: '1600.00', isActive: true },
+                { ownerUserId: shipperAuth.user.id, fromCurrency: Currency.USD, toCurrency: Currency.NGN, costRate: '1500.00', clientRate: '1600.00', isActive: true },
             ]);
 
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(shipper));
-            app.openapi(routes.getCurrentFxRate, handlers.getCurrentFxRate);
-
-            const response = await app.request('/fx-rates/current?fromCurrency=USD&toCurrency=NGN', {
+            const response = await app.request('/v1/fx-rates/current?fromCurrency=USD&toCurrency=NGN', {
                 method: 'GET',
+                headers: shipperAuth.headers,
             });
 
             expect(response.status).toBe(200);
@@ -155,11 +128,7 @@ describe('FX Rates Routes', () => {
 
     describe('POST /fx-rates', () => {
         it('should return 401 without authentication', async () => {
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(null));
-            app.openapi(routes.createFxRate, handlers.createFxRate);
-
-            const response = await app.request('/fx-rates', {
+            const response = await app.request('/v1/fx-rates', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -174,15 +143,12 @@ describe('FX Rates Routes', () => {
         });
 
         it('should create a new FX rate', async () => {
-            const shipper = await userFactory.createShipper();
-
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(shipper));
-            app.openapi(routes.createFxRate, handlers.createFxRate);
-
-            const response = await app.request('/fx-rates', {
+            const response = await app.request('/v1/fx-rates', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...shipperAuth.headers
+                },
                 body: JSON.stringify({
                     fromCurrency: 'USD',
                     toCurrency: 'NGN',
@@ -193,7 +159,7 @@ describe('FX Rates Routes', () => {
 
             expect(response.status).toBe(201);
             const body = await response.json();
-            expect(body.ownerUserId).toBe(shipper.id);
+            expect(body.ownerUserId).toBe(shipperAuth.user.id);
             expect(body.fromCurrency).toBe('USD');
             expect(body.toCurrency).toBe('NGN');
             expect(body.costRate).toBe('1500.000000');
@@ -202,13 +168,11 @@ describe('FX Rates Routes', () => {
         });
 
         it('should deactivate previous rate for same currency pair', async () => {
-            const shipper = await userFactory.createShipper();
-
             // Create initial rate
             const [oldRate] = await db
                 .insert(fxRates)
                 .values({
-                    ownerUserId: shipper.id,
+                    ownerUserId: shipperAuth.user.id,
                     fromCurrency: Currency.USD,
                     toCurrency: Currency.NGN,
                     costRate: '1400.00',
@@ -217,15 +181,13 @@ describe('FX Rates Routes', () => {
                 })
                 .returning();
 
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(shipper));
-            app.openapi(routes.createFxRate, handlers.createFxRate);
-            app.openapi(routes.getFxRate, handlers.getFxRate);
-
             // Create new rate
-            const createResponse = await app.request('/fx-rates', {
+            const createResponse = await app.request('/v1/fx-rates', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...shipperAuth.headers
+                },
                 body: JSON.stringify({
                     fromCurrency: 'USD',
                     toCurrency: 'NGN',
@@ -237,8 +199,9 @@ describe('FX Rates Routes', () => {
             expect(createResponse.status).toBe(201);
 
             // Check old rate is now inactive
-            const getOldResponse = await app.request(`/fx-rates/${oldRate.id}`, {
+            const getOldResponse = await app.request(`/v1/fx-rates/${oldRate.id}`, {
                 method: 'GET',
+                headers: shipperAuth.headers,
             });
 
             expect(getOldResponse.status).toBe(200);
@@ -247,15 +210,12 @@ describe('FX Rates Routes', () => {
         });
 
         it('should reject same from and to currency', async () => {
-            const shipper = await userFactory.createShipper();
-
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(shipper));
-            app.openapi(routes.createFxRate, handlers.createFxRate);
-
-            const response = await app.request('/fx-rates', {
+            const response = await app.request('/v1/fx-rates', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...shipperAuth.headers
+                },
                 body: JSON.stringify({
                     fromCurrency: 'USD',
                     toCurrency: 'USD',
@@ -272,11 +232,7 @@ describe('FX Rates Routes', () => {
 
     describe('PATCH /fx-rates/:id', () => {
         it('should return 401 without authentication', async () => {
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(null));
-            app.openapi(routes.updateFxRate, handlers.updateFxRate);
-
-            const response = await app.request('/fx-rates/1', {
+            const response = await app.request('/v1/fx-rates/1', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ clientRate: '1700.00' }),
@@ -286,12 +242,10 @@ describe('FX Rates Routes', () => {
         });
 
         it('should update rates', async () => {
-            const shipper = await userFactory.createShipper();
-
             const [rate] = await db
                 .insert(fxRates)
                 .values({
-                    ownerUserId: shipper.id,
+                    ownerUserId: shipperAuth.user.id,
                     fromCurrency: Currency.USD,
                     toCurrency: Currency.NGN,
                     costRate: '1500.00',
@@ -299,13 +253,12 @@ describe('FX Rates Routes', () => {
                 })
                 .returning();
 
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(shipper));
-            app.openapi(routes.updateFxRate, handlers.updateFxRate);
-
-            const response = await app.request(`/fx-rates/${rate.id}`, {
+            const response = await app.request(`/v1/fx-rates/${rate.id}`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...shipperAuth.headers
+                },
                 body: JSON.stringify({ costRate: '1550.00', clientRate: '1700.00' }),
             });
 
@@ -316,15 +269,12 @@ describe('FX Rates Routes', () => {
         });
 
         it('should return 404 for non-existent rate', async () => {
-            const shipper = await userFactory.createShipper();
-
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(shipper));
-            app.openapi(routes.updateFxRate, handlers.updateFxRate);
-
-            const response = await app.request('/fx-rates/99999', {
+            const response = await app.request('/v1/fx-rates/99999', {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...shipperAuth.headers
+                },
                 body: JSON.stringify({ clientRate: '1700.00' }),
             });
 
@@ -332,13 +282,12 @@ describe('FX Rates Routes', () => {
         });
 
         it('should return 404 for other shipper rate', async () => {
-            const shipper1 = await userFactory.createShipper({ email: 'shipper1@test.com' });
             const shipper2 = await userFactory.createShipper({ email: 'shipper2@test.com' });
 
             const [rate] = await db
                 .insert(fxRates)
                 .values({
-                    ownerUserId: shipper1.id,
+                    ownerUserId: shipper2.id,
                     fromCurrency: Currency.USD,
                     toCurrency: Currency.NGN,
                     costRate: '1500.00',
@@ -346,13 +295,12 @@ describe('FX Rates Routes', () => {
                 })
                 .returning();
 
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(shipper2));
-            app.openapi(routes.updateFxRate, handlers.updateFxRate);
-
-            const response = await app.request(`/fx-rates/${rate.id}`, {
+            const response = await app.request(`/v1/fx-rates/${rate.id}`, {
                 method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    ...shipperAuth.headers
+                },
                 body: JSON.stringify({ clientRate: '1700.00' }),
             });
 
@@ -362,11 +310,7 @@ describe('FX Rates Routes', () => {
 
     describe('DELETE /fx-rates/:id', () => {
         it('should return 401 without authentication', async () => {
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(null));
-            app.openapi(routes.deleteFxRate, handlers.deleteFxRate);
-
-            const response = await app.request('/fx-rates/1', {
+            const response = await app.request('/v1/fx-rates/1', {
                 method: 'DELETE',
             });
 
@@ -374,12 +318,10 @@ describe('FX Rates Routes', () => {
         });
 
         it('should delete rate', async () => {
-            const shipper = await userFactory.createShipper();
-
             const [rate] = await db
                 .insert(fxRates)
                 .values({
-                    ownerUserId: shipper.id,
+                    ownerUserId: shipperAuth.user.id,
                     fromCurrency: Currency.USD,
                     toCurrency: Currency.NGN,
                     costRate: '1500.00',
@@ -387,13 +329,9 @@ describe('FX Rates Routes', () => {
                 })
                 .returning();
 
-            const app = createTestApp();
-            app.use('*', mockAuthMiddleware(shipper));
-            app.openapi(routes.deleteFxRate, handlers.deleteFxRate);
-            app.openapi(routes.getFxRate, handlers.getFxRate);
-
-            const deleteResponse = await app.request(`/fx-rates/${rate.id}`, {
+            const deleteResponse = await app.request(`/v1/fx-rates/${rate.id}`, {
                 method: 'DELETE',
+                headers: shipperAuth.headers,
             });
 
             expect(deleteResponse.status).toBe(200);
@@ -401,8 +339,9 @@ describe('FX Rates Routes', () => {
             expect(body.success).toBe(true);
 
             // Verify rate is gone
-            const getResponse = await app.request(`/fx-rates/${rate.id}`, {
+            const getResponse = await app.request(`/v1/fx-rates/${rate.id}`, {
                 method: 'GET',
+                headers: shipperAuth.headers,
             });
             expect(getResponse.status).toBe(404);
         });

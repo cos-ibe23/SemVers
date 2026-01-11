@@ -13,7 +13,6 @@ export interface CreateItemInput {
     category: string;
     model?: string;
     imei?: string;
-    imeiSource?: 'manual' | 'scanned' | 'api';
     estimatedWeightLb?: number;
     clientShippingUsd?: number;
 }
@@ -22,10 +21,8 @@ export interface UpdateItemInput {
     category?: string;
     model?: string | null;
     imei?: string | null;
-    imeiSource?: 'manual' | 'scanned' | 'api' | null;
     estimatedWeightLb?: number;
     clientShippingUsd?: number;
-    status?: 'PENDING' | 'IN_BOX' | 'IN_TRANSIT' | 'DELIVERED' | 'HANDED_OFF' | 'SOLD' | 'RETURNED';
 }
 
 export class ItemService extends Service {
@@ -66,10 +63,8 @@ export class ItemService extends Service {
                     category: input.category,
                     model: input.model || null,
                     imei: input.imei || null,
-                    imeiSource: input.imeiSource || null,
                     estimatedWeightLb: input.estimatedWeightLb?.toString() || '0',
                     clientShippingUsd: input.clientShippingUsd?.toString() || '0',
-                    status: 'PENDING',
                 })
                 .returning();
 
@@ -189,10 +184,8 @@ export class ItemService extends Service {
             if (input.category !== undefined) updateData.category = input.category;
             if (input.model !== undefined) updateData.model = input.model;
             if (input.imei !== undefined) updateData.imei = input.imei;
-            if (input.imeiSource !== undefined) updateData.imeiSource = input.imeiSource;
             if (input.estimatedWeightLb !== undefined) updateData.estimatedWeightLb = input.estimatedWeightLb.toString();
             if (input.clientShippingUsd !== undefined) updateData.clientShippingUsd = input.clientShippingUsd.toString();
-            if (input.status !== undefined) updateData.status = input.status;
 
             const [updated] = await this.db
                 .update(items)

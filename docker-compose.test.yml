@@ -35,9 +35,10 @@ services:
       POSTGRES_USER: imbod
       POSTGRES_PASSWORD: imbod
       POSTGRES_DB: imbod_test
-    # No ports exposed - only accessible within Docker network
+    ports:
+      - "5433:5432"
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U imbod']
+      test: ["CMD-SHELL", "pg_isready -U imbod"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -51,7 +52,7 @@ services:
     container_name: imbod-redis-test
     # No ports exposed - only accessible within Docker network
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -69,7 +70,7 @@ services:
       MINIO_ROOT_PASSWORD: minioadmin
     # No ports exposed - only accessible within Docker network
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:9000/minio/health/live']
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 5s
       timeout: 5s
       retries: 5

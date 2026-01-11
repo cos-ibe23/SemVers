@@ -10,6 +10,7 @@ import {
 import { ApiError, ForbiddenError, NotFoundError, BadRequestError } from '../lib/errors';
 import { Resources } from '../lib/user-can';
 import { Service, type ServiceOptions } from './service';
+import { PickupStatus, PickupRequestStatus } from '../constants/enums';
 
 export interface CreatePickupInput {
     clientUserId: string;
@@ -78,7 +79,7 @@ export class PickupService extends Service {
                     throw new ForbiddenError('You do not own this pickup request');
                 }
 
-                if (request.status === 'CONVERTED') {
+                if (request.status === PickupRequestStatus.CONVERTED) {
                     throw new BadRequestError('This pickup request has already been converted');
                 }
 
@@ -125,7 +126,7 @@ export class PickupService extends Service {
                     pickupDate: input.pickupDate || sourceRequest?.pickupTime.toISOString().split('T')[0] || null,
                     fxRateId: input.fxRateId || null,
                     sourceRequestId: input.sourceRequestId || null,
-                    status: 'DRAFT',
+                    status: PickupStatus.DRAFT,
                 })
                 .returning();
 
@@ -134,7 +135,7 @@ export class PickupService extends Service {
                 await this.db
                     .update(pickupRequests)
                     .set({
-                        status: 'CONVERTED',
+                        status: PickupRequestStatus.CONVERTED,
                         convertedPickupId: pickup.id,
                         updatedAt: new Date(),
                     })
@@ -309,7 +310,7 @@ export class PickupService extends Service {
             }
 
             // Only allow deletion of draft pickups
-            if (existing.status !== 'DRAFT') {
+            if (existing.status !== PickupStatus.DRAFT) {
                 throw new BadRequestError('Only draft pickups can be deleted');
             }
 

@@ -3,6 +3,7 @@ import { getTestDb, cleanTestDb, closeTestDb } from '@test/helpers';
 import { createIntegrationTestApp, signupAndLogin } from '@test/helpers/integration';
 import { createUserFactory, UserFactory, type User } from '@test/factories';
 import * as HttpStatusCodes from '../../../lib/http-status-codes';
+import { PickupRequestStatus } from '../../../constants/enums';
 import { fxRates } from '../../../db/schema/fx-rates';
 import { user } from '../../../db/schema/auth';
 import { eq } from 'drizzle-orm';
@@ -77,7 +78,7 @@ describe('Public Request API (Integration)', () => {
         // Verify profile data was used
         expect(body.clientName).toBe(clientAuth.user.name);
         expect(body.clientEmail).toBe(clientAuth.user.email);
-        expect(body.status).toBe('PENDING');
+        expect(body.status).toBe(PickupRequestStatus.PENDING);
     });
 
     it('should return 401 if not logged in', async () => {
@@ -230,7 +231,7 @@ describe('Public Request API (Integration)', () => {
             headers: shipperAuth.headers,
         });
         const updatedRequest = await updatedReqResponse.json();
-        expect(updatedRequest.status).toBe('CONVERTED');
+        expect(updatedRequest.status).toBe(PickupRequestStatus.CONVERTED);
         expect(updatedRequest.convertedPickupId).toBe(pickup.id);
     });
 });

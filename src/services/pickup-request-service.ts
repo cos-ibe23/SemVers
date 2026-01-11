@@ -24,7 +24,7 @@ export interface UpdatePickupRequestInput {
     itemDescription?: string | null;
     links?: string | string[] | null;
     imeis?: string | string[] | null;
-    status?: 'REJECTED';
+    status?: typeof PickupRequestStatus.REJECTED;
 }
 
 export interface ListPickupRequestsOptions {
@@ -162,7 +162,7 @@ export class PickupRequestService extends Service {
                 throw new ForbiddenError('You are not authorized to update this pickup request');
             }
 
-            if (existing.status === 'CONVERTED') {
+            if (existing.status === PickupRequestStatus.CONVERTED) {
                 throw new BadRequestError('Cannot update a converted pickup request');
             }
 
@@ -238,7 +238,7 @@ export class PickupRequestService extends Service {
                 throw new ForbiddenError('You are not authorized to delete this pickup request');
             }
             
-            if (existing.status === 'CONVERTED') {
+            if (existing.status === PickupRequestStatus.CONVERTED) {
                 throw new BadRequestError('Cannot delete a converted pickup request');
             }
 

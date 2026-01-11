@@ -5,7 +5,7 @@ import { user } from './auth';
 import { pickups } from './pickups';
 import { currencyEnum } from './fx-rates';
 import { timestamps } from './helpers';
-import { PICKUP_REQUEST_STATUSES, CURRENCIES } from '../../constants/enums';
+import { PICKUP_REQUEST_STATUSES, CURRENCIES, PickupRequestStatus } from '../../constants/enums';
 
 export const pickupRequestStatusEnum = pgEnum('pickup_request_status', PICKUP_REQUEST_STATUSES);
 
@@ -35,7 +35,7 @@ export const pickupRequests = pgTable('pickup_requests', {
     links: text('links').array(),
     sellerMetadata: jsonb('seller_metadata').$type<SellerMetadata>(),
     imeis: text('imeis').array(),
-    status: pickupRequestStatusEnum('status').default('PENDING'),
+    status: pickupRequestStatusEnum('status').default(PickupRequestStatus.PENDING),
     convertedPickupId: integer('converted_pickup_id').references(() => pickups.id, { onDelete: 'set null' }),
     ...timestamps(),
 });
@@ -108,5 +108,5 @@ export const updatePickupRequestSchema = z.object({
     itemDescription: z.string().nullable().optional(),
     links: z.union([z.string(), z.array(z.string())]).optional(),
     imeis: z.union([z.string(), z.array(z.string())]).optional(),
-    status: z.enum(['REJECTED'] as const).optional(), // Only allow setting to REJECTED via update
+    status: z.enum([PickupRequestStatus.REJECTED] as const).optional(),
 });

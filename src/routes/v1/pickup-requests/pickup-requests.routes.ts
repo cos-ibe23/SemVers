@@ -11,7 +11,6 @@ import {
     pickupRequestResponseSchema,
     updatePickupRequestSchema,
 } from '../../../db/schema/pickup-requests';
-import { pickupResponseSchema } from '../../../db/schema/pickups';
 import { PICKUP_REQUEST_STATUSES } from '../../../constants/enums';
 
 const TAGS = ['v1-pickup-requests'] as const;

@@ -37,4 +37,10 @@ export const ITEM_TEMPLATES: ItemTemplate[] = [
         estimatedWeightLb: 0.3, 
         shippingCostUsd: 20 
     },
+    {
+        id: 'console',
+        category: 'Console', 
+        estimatedWeightLb: 10.0, 
+        shippingCostUsd: 70 
+    },
 ];

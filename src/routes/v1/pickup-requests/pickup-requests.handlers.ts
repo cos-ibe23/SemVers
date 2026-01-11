@@ -7,7 +7,6 @@ import type {
     GetPickupRequestRoute,
     UpdatePickupRequestRoute,
     DeletePickupRequestRoute,
-    ConvertToPickupRoute,
 } from './pickup-requests.routes';
 
 export const listPickupRequests: AppRouteHandler<ListPickupRequestsRoute> = async (c) => {
@@ -93,33 +92,6 @@ export const deletePickupRequest: AppRouteHandler<DeletePickupRequestRoute> = as
     } catch (error: unknown) {
         const apiError = ApiError.parse(error);
         apiError.log({ handler: 'deletePickupRequest' });
-
-        switch (apiError.statusCode) {
-            case HttpStatusCodes.BAD_REQUEST:
-                return c.json(apiError.toResponseError(), HttpStatusCodes.BAD_REQUEST);
-            case HttpStatusCodes.UNAUTHORIZED:
-                return c.json(apiError.toResponseError(), HttpStatusCodes.UNAUTHORIZED);
-            case HttpStatusCodes.FORBIDDEN:
-                return c.json(apiError.toResponseError(), HttpStatusCodes.FORBIDDEN);
-            case HttpStatusCodes.NOT_FOUND:
-                return c.json(apiError.toResponseError(), HttpStatusCodes.NOT_FOUND);
-            default:
-                return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
-        }
-    }
-};
-
-export const convertToPickup: AppRouteHandler<ConvertToPickupRoute> = async (c) => {
-    try {
-        const { id } = c.req.valid('param');
-        const body = c.req.valid('json');
-        const service = new PickupRequestService({ context: c });
-        const result = await service.convertToPickup(id, body);
-
-        return c.json(result, HttpStatusCodes.OK);
-    } catch (error: unknown) {
-        const apiError = ApiError.parse(error);
-        apiError.log({ handler: 'convertToPickup' });
 
         switch (apiError.statusCode) {
             case HttpStatusCodes.BAD_REQUEST:

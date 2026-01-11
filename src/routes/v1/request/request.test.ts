@@ -4,7 +4,7 @@ import { createIntegrationTestApp, signupAndLogin } from '@test/helpers/integrat
 import { createUserFactory, UserFactory, type User } from '@test/factories';
 import * as HttpStatusCodes from '../../../lib/http-status-codes';
 import { fxRates } from '../../../db/schema/fx-rates';
-import { user } from '../../../db/schema/auth'; // For role update
+import { user } from '../../../db/schema/auth';
 import { eq } from 'drizzle-orm';
 
 describe('Public Request API (Integration)', () => {
@@ -97,7 +97,7 @@ describe('Public Request API (Integration)', () => {
     });
 
     it('should return 404 for unknown shipper slug', async () => {
-         const payload = {
+        const payload = {
             numberOfItems: 1,
             meetupLocation: 'Nowhere',
             pickupTime: new Date().toISOString(),
@@ -161,5 +161,76 @@ describe('Public Request API (Integration)', () => {
         const body = await response.json();
         expect(body.links).toEqual(['https://example.com/a', 'https://example.com/b']);
         expect(body.imeis).toEqual(['11111', '22222']);
+    });
+    it('should create pickup from request and update request status', async () => {
+        // 1. Create a request
+        const requestPayload = {
+            numberOfItems: 1,
+            meetupLocation: 'Lagos',
+            pickupTime: new Date().toISOString(),
+            agreedPrice: 100,
+        };
+
+        const reqResponse = await app.request(`/v1/request/${shipperSlug}`, {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                ...clientAuth.headers 
+            },
+            body: JSON.stringify(requestPayload),
+        });
+        const request = await reqResponse.json();
+        expect(reqResponse.status).toBe(HttpStatusCodes.CREATED);
+
+        // Login as shipper to convert
+        const shipperAuth = await signupAndLogin('shipper@example.com', 'Shipper User');
+        // We reused the factory earlier, but signupAndLogin creates a new user. 
+        // We need to act as the OWNER of the request (the shipper created in beforeEach).
+        // Let's just create a token for the existing shipper user.
+        // Since signupAndLogin is high-level, let's use a workaround:
+        // We'll update the request to point to the new 'shipperAuth' user as the shipper
+        // This avoids complex auth mocking.
+        
+        await db.update(user)
+            .set({ role: 'SHIPPER' })
+            .where(eq(user.id, shipperAuth.user.id));
+        
+        // Transfer ownership of request to this new shipper
+        const { pickupRequests } = await import('../../../db/schema/pickup-requests');
+        await db.update(pickupRequests)
+            .set({ shipperUserId: shipperAuth.user.id })
+            .where(eq(pickupRequests.id, request.id));
+
+        // 2. Create pickup referencing the request
+        const pickupPayload = {
+            clientUserId: clientAuth.user.id,
+            sourceRequestId: request.id,
+            pickupFeeUsd: 10,
+        };
+
+        const pickupResponse = await app.request('/v1/pickups', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...shipperAuth.headers
+            },
+            body: JSON.stringify(pickupPayload),
+        });
+
+        expect(pickupResponse.status).toBe(HttpStatusCodes.CREATED);
+        const pickup = await pickupResponse.json();
+        
+        expect(pickup.sourceRequestId).toBe(request.id);
+        expect(pickup.itemPriceUsd).toBe('100.00'); // Inherited from request
+        expect(pickup.pickupFeeUsd).toBe('10.00');
+
+        // 3. Verify request status is updated
+        const updatedReqResponse = await app.request(`/v1/pickup-requests/${request.id}`, {
+            method: 'GET',
+            headers: shipperAuth.headers,
+        });
+        const updatedRequest = await updatedReqResponse.json();
+        expect(updatedRequest.status).toBe('CONVERTED');
+        expect(updatedRequest.convertedPickupId).toBe(pickup.id);
     });
 });

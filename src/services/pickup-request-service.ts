@@ -22,9 +22,9 @@ export interface UpdatePickupRequestInput {
     sellerMetadata?: SellerMetadata | null;
     agreedPrice?: number | null;
     itemDescription?: string | null;
-    links?: string | null;
-    imeis?: string | null;
-    status?: 'REJECTED'; // Only allow rejecting via update (CONVERTED happens via convert endpoint)
+    links?: string | string[] | null;
+    imeis?: string | string[] | null;
+    status?: 'REJECTED';
 }
 
 export interface ListPickupRequestsOptions {
@@ -70,7 +70,6 @@ export class PickupRequestService extends Service {
                 throw new NotFoundError('Pickup request not found');
             }
 
-            // Check ownership - shipper can only see their own requests
             if (!this.userCan.isAdmin() && request.shipperUserId !== shipperUserId) {
                 throw new ForbiddenError('You are not authorized to view this pickup request');
             }
@@ -96,25 +95,20 @@ export class PickupRequestService extends Service {
                 throw new ForbiddenError('You are not authorized to list pickup requests');
             }
 
-            // Base conditions - shipper sees only their own requests
             const conditions = this.userCan.isAdmin()
                 ? []
                 : [eq(pickupRequests.shipperUserId, shipperUserId)];
 
-            // Status filter
             if (status) {
                 conditions.push(eq(pickupRequests.status, status as typeof pickupRequests.status.enumValues[number]));
             }
 
-            // Client filter
             if (clientId) {
                 conditions.push(eq(pickupRequests.clientUserId, clientId));
             }
 
-            // Build where clause
             let whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
-            // Search filter (name, email)
             if (search) {
                 const searchCondition = or(
                     ilike(pickupRequests.clientName, `%${search}%`),
@@ -123,13 +117,11 @@ export class PickupRequestService extends Service {
                 whereClause = whereClause ? and(whereClause, searchCondition) : searchCondition;
             }
 
-            // Get total count
             const [{ total }] = await this.db
                 .select({ total: count() })
                 .from(pickupRequests)
                 .where(whereClause);
 
-            // Get paginated results
             const results = await this.db
                 .select()
                 .from(pickupRequests)
@@ -155,44 +147,77 @@ export class PickupRequestService extends Service {
     /**
      * Update a pickup request.
      */
+    /**
+     * Update a pickup request.
+     */
     public async update(id: number, input: UpdatePickupRequestInput): Promise<PickupRequestResponse> {
         try {
-            const shipperUserId = this.requireUserId();
+            this.requireUserId();
 
-            // Get existing request
             const existing = await this.getById(id);
 
+            // Re-check permissions using canUpdate (though getById effectively checks read access,
+            // update might have stricter rules, so we keep this)
             if (!this.userCan.canUpdate(Resources.PICKUP_REQUESTS, { ownerUserId: existing.shipperUserId })) {
                 throw new ForbiddenError('You are not authorized to update this pickup request');
             }
 
-            // Don't allow updates to converted requests
             if (existing.status === 'CONVERTED') {
                 throw new BadRequestError('Cannot update a converted pickup request');
             }
 
             const updateData: Record<string, unknown> = {};
 
-            if (input.clientName !== undefined) updateData.clientName = input.clientName;
-            if (input.clientEmail !== undefined) updateData.clientEmail = input.clientEmail;
-            if (input.clientPhone !== undefined) updateData.clientPhone = input.clientPhone;
-            if (input.numberOfItems !== undefined) updateData.numberOfItems = input.numberOfItems;
-            if (input.meetupLocation !== undefined) updateData.meetupLocation = input.meetupLocation;
-            if (input.pickupTime !== undefined) updateData.pickupTime = new Date(input.pickupTime);
-            if (input.sellerMetadata !== undefined) updateData.sellerMetadata = input.sellerMetadata;
-            if (input.agreedPrice !== undefined) updateData.agreedPrice = input.agreedPrice?.toString() || null;
-            if (input.itemDescription !== undefined) updateData.itemDescription = input.itemDescription;
-            if (input.links !== undefined) updateData.links = input.links;
-            if (input.imeis !== undefined) updateData.imeis = input.imeis;
-            if (input.status !== undefined) updateData.status = input.status;
+            // Helper to conditionally add fields
+            const addIfDefined = (key: string, value: any) => {
+                if (value !== undefined) updateData[key] = value;
+            };
+
+            addIfDefined('clientName', input.clientName);
+            addIfDefined('clientEmail', input.clientEmail);
+            addIfDefined('clientPhone', input.clientPhone);
+            addIfDefined('numberOfItems', input.numberOfItems);
+            addIfDefined('meetupLocation', input.meetupLocation);
+            addIfDefined('sellerMetadata', input.sellerMetadata);
+            addIfDefined('itemDescription', input.itemDescription);
+            addIfDefined('status', input.status);
+
+            if (input.pickupTime !== undefined) {
+                updateData.pickupTime = new Date(input.pickupTime);
+            }
+
+            if (input.agreedPrice !== undefined) {
+                updateData.agreedPrice = input.agreedPrice?.toString() || null;
+            }
+
+            if (input.links !== undefined) {
+                updateData.links = Array.isArray(input.links)
+                    ? input.links
+                    : input.links
+                      ? input.links.split(',').map(s => s.trim())
+                      : null;
+            }
+
+            if (input.imeis !== undefined) {
+                updateData.imeis = Array.isArray(input.imeis)
+                    ? input.imeis
+                    : input.imeis
+                      ? input.imeis.split(',').map(s => s.trim())
+                      : null;
+            }
+
+            // If no updates, return existing
+            if (Object.keys(updateData).length === 0) {
+                return existing;
+            }
 
             const [updated] = await this.db
                 .update(pickupRequests)
-                .set(updateData)
+                .set({ ...updateData, updatedAt: new Date() })
                 .where(eq(pickupRequests.id, id))
                 .returning();
 
-            this.log('pickup_request_update', { requestId: id, updates: Object.keys(input) });
+            this.log('pickup_request_update', { requestId: id, updates: Object.keys(updateData) });
 
             return pickupRequestResponseSchema.parse(updated);
         } catch (error) {
@@ -212,8 +237,7 @@ export class PickupRequestService extends Service {
             if (!this.userCan.canDelete(Resources.PICKUP_REQUESTS, { ownerUserId: existing.shipperUserId })) {
                 throw new ForbiddenError('You are not authorized to delete this pickup request');
             }
-
-            // Don't allow deletion of converted requests
+            
             if (existing.status === 'CONVERTED') {
                 throw new BadRequestError('Cannot delete a converted pickup request');
             }
@@ -224,84 +248,6 @@ export class PickupRequestService extends Service {
         } catch (error) {
             const apiError = ApiError.parse(error);
             apiError.log({ method: 'PickupRequestService.delete' });
-            throw apiError;
-        }
-    }
-
-    /**
-     * Convert a pickup request to a pickup.
-     */
-    public async convertToPickup(id: number, input: ConvertToPickupInput = {}): Promise<{ pickup: typeof pickups.$inferSelect; request: PickupRequestResponse }> {
-        try {
-            const shipperUserId = this.requireUserId();
-
-            // Get existing request
-            const existing = await this.getById(id);
-
-            if (!this.userCan.canUpdate(Resources.PICKUP_REQUESTS, { ownerUserId: existing.shipperUserId })) {
-                throw new ForbiddenError('You are not authorized to convert this pickup request');
-            }
-
-            if (existing.status === PickupRequestStatus.CONVERTED) {
-                throw new BadRequestError('This pickup request has already been converted');
-            }
-
-            if (!existing.clientUserId) {
-                throw new BadRequestError('Cannot convert a request without a client');
-            }
-
-            // Validate FX rate if provided
-            if (input.fxRateId) {
-                const [fxRate] = await this.db
-                    .select()
-                    .from(fxRates)
-                    .where(
-                        and(
-                            eq(fxRates.id, input.fxRateId),
-                            eq(fxRates.ownerUserId, shipperUserId)
-                        )
-                    )
-                    .limit(1);
-
-                if (!fxRate) {
-                    throw new BadRequestError('Invalid FX rate');
-                }
-            }
-
-            // Create pickup
-            const [pickup] = await this.db
-                .insert(pickups)
-                .values({
-                    ownerUserId: shipperUserId,
-                    clientUserId: existing.clientUserId,
-                    pickupFeeUsd: input.pickupFeeUsd?.toString() || '0',
-                    itemPriceUsd: existing.agreedPrice || '0',
-                    pickupDate: existing.pickupTime.toISOString().split('T')[0],
-                    sourceRequestId: id,
-                    fxRateId: input.fxRateId || null,
-                    status: 'DRAFT',
-                })
-                .returning();
-
-            // Update request status
-            const [updatedRequest] = await this.db
-                .update(pickupRequests)
-                .set({
-                    status: PickupRequestStatus.CONVERTED,
-                    convertedPickupId: pickup.id,
-                })
-                .where(eq(pickupRequests.id, id))
-                .returning();
-
-            this.log('pickup_request_convert', { requestId: id, pickupId: pickup.id });
-
-            return {
-                pickup,
-                request: pickupRequestResponseSchema.parse(updatedRequest),
-            };
-        } catch (error) {
-            const apiError = ApiError.parse(error);
-            apiError.log({ method: 'PickupRequestService.convertToPickup' });
             throw apiError;
         }
     }

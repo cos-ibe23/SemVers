@@ -103,39 +103,7 @@ export const deletePickupRequest = createRoute({
     },
 });
 
-const convertToPickupRequestSchema = z.object({
-    fxRateId: z.number().optional(),
-    pickupFeeUsd: z.number().nonnegative().optional(),
-});
-
-const convertToPickupResponseSchema = z.object({
-    pickup: pickupResponseSchema,
-    request: pickupRequestResponseSchema,
-});
-
-export const convertToPickup = createRoute({
-    middleware: [authenticated],
-    tags: [...TAGS],
-    method: 'post',
-    path: '/pickup-requests/{id}/convert',
-    request: {
-        params: z.object({
-            id: z.coerce.number(),
-        }),
-        body: jsonContentRequired(convertToPickupRequestSchema, 'Convert to pickup options'),
-    },
-    responses: {
-        [HttpStatusCodes.OK]: jsonContent(convertToPickupResponseSchema, 'Pickup created from request'),
-        [HttpStatusCodes.BAD_REQUEST]: jsonApiErrorContent('Bad request'),
-        [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('Unauthorized'),
-        [HttpStatusCodes.FORBIDDEN]: jsonApiErrorContent('Forbidden'),
-        [HttpStatusCodes.NOT_FOUND]: jsonApiErrorContent('Pickup request not found'),
-        [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('Internal server error'),
-    },
-});
-
 export type ListPickupRequestsRoute = typeof listPickupRequests;
 export type GetPickupRequestRoute = typeof getPickupRequest;
 export type UpdatePickupRequestRoute = typeof updatePickupRequest;
 export type DeletePickupRequestRoute = typeof deletePickupRequest;
-export type ConvertToPickupRoute = typeof convertToPickup;

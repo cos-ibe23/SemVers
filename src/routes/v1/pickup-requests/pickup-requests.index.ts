@@ -7,6 +7,6 @@ const router = createRouter()
     .openapi(routes.getPickupRequest, handlers.getPickupRequest)
     .openapi(routes.updatePickupRequest, handlers.updatePickupRequest)
     .openapi(routes.deletePickupRequest, handlers.deletePickupRequest)
-    .openapi(routes.convertToPickup, handlers.convertToPickup);
+    .openapi(routes.deletePickupRequest, handlers.deletePickupRequest);
 
 export default router;

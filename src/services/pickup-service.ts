@@ -1,6 +1,7 @@
 import { eq, and, desc, count } from 'drizzle-orm';
 import {
     pickups,
+    pickupRequests,
     fxRates,
     selectPickupSchema,
     pickupResponseSchema,
@@ -17,6 +18,7 @@ export interface CreatePickupInput {
     notes?: string;
     pickupDate?: string;
     fxRateId?: number;
+    sourceRequestId?: number;
 }
 
 export interface UpdatePickupInput {
@@ -54,9 +56,33 @@ export class PickupService extends Service {
     public async create(input: CreatePickupInput): Promise<PickupResponse> {
         try {
             const ownerUserId = this.requireUserId();
+            let sourceRequest: typeof pickupRequests.$inferSelect | null = null;
 
             if (!this.userCan.canCreate(Resources.PICKUPS)) {
                 throw new ForbiddenError('You are not authorized to create pickups');
+            }
+
+            // Check source request if provided
+            if (input.sourceRequestId) {
+                const [request] = await this.db
+                    .select()
+                    .from(pickupRequests) // We need this imported, usually handled by adding it to imports
+                    .where(eq(pickupRequests.id, input.sourceRequestId)) // Need pickupRequests imported
+                    .limit(1);
+
+                if (!request) {
+                    throw new BadRequestError('Source pickup request not found');
+                }
+
+                if (request.shipperUserId !== ownerUserId) {
+                    throw new ForbiddenError('You do not own this pickup request');
+                }
+
+                if (request.status === 'CONVERTED') {
+                    throw new BadRequestError('This pickup request has already been converted');
+                }
+
+                sourceRequest = request;
             }
 
             // Validate FX rate if provided
@@ -77,21 +103,45 @@ export class PickupService extends Service {
                 }
             }
 
+            // Use defaults from source request if available and not overridden
+            const clientUserId = input.clientUserId || sourceRequest?.clientUserId;
+            if (!clientUserId) {
+                throw new BadRequestError('Client user ID is required'); // Should be caught by Zod but good safety
+            }
+
+            // Default prices from request if not provided
+            const itemPriceUsd = input.itemPriceUsd !== undefined 
+                ? input.itemPriceUsd.toString() 
+                : sourceRequest?.agreedPrice || '0';
+
             const [pickup] = await this.db
                 .insert(pickups)
                 .values({
                     ownerUserId,
-                    clientUserId: input.clientUserId,
+                    clientUserId: clientUserId,
                     pickupFeeUsd: input.pickupFeeUsd?.toString() || '0',
-                    itemPriceUsd: input.itemPriceUsd?.toString() || '0',
+                    itemPriceUsd: itemPriceUsd,
                     notes: input.notes || null,
-                    pickupDate: input.pickupDate || null,
+                    pickupDate: input.pickupDate || sourceRequest?.pickupTime.toISOString().split('T')[0] || null,
                     fxRateId: input.fxRateId || null,
+                    sourceRequestId: input.sourceRequestId || null,
                     status: 'DRAFT',
                 })
                 .returning();
 
-            this.log('pickup_create', { pickupId: pickup.id, clientUserId: input.clientUserId });
+            // If created from request, update request status
+            if (input.sourceRequestId) {
+                await this.db
+                    .update(pickupRequests)
+                    .set({
+                        status: 'CONVERTED',
+                        convertedPickupId: pickup.id,
+                        updatedAt: new Date(),
+                    })
+                    .where(eq(pickupRequests.id, input.sourceRequestId));
+            }
+
+            this.log('pickup_create', { pickupId: pickup.id, clientUserId: clientUserId, sourceRequestId: input.sourceRequestId });
 
             return pickupResponseSchema.parse(pickup);
         } catch (error) {

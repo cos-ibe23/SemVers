@@ -63,6 +63,7 @@ export const createPickupBodySchema = z.object({
     notes: z.string().optional(),
     pickupDate: z.string().optional(), // ISO date string
     fxRateId: z.number().optional(),
+    sourceRequestId: z.number().optional(),
 });
 
 export const updatePickupBodySchema = z.object({

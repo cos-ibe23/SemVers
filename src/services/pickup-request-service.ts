@@ -21,7 +21,7 @@ export interface UpdatePickupRequestInput {
     agreedPrice?: number | null;
     itemDescription?: string | null;
     links?: string | string[] | null;
-    imeis?: string | string[] | null;
+    serialOrImeis?: string | string[] | null;
     status?: typeof PickupRequestStatus.REJECTED;
 }
 
@@ -193,11 +193,11 @@ export class PickupRequestService extends Service {
                       : null;
             }
 
-            if (input.imeis !== undefined) {
-                updateData.imeis = Array.isArray(input.imeis)
-                    ? input.imeis
-                    : input.imeis
-                      ? input.imeis.split(',').map(s => s.trim())
+            if (input.serialOrImeis !== undefined) {
+                updateData.serialOrImeis = Array.isArray(input.serialOrImeis)
+                    ? input.serialOrImeis
+                    : input.serialOrImeis
+                      ? input.serialOrImeis.split(',').map(s => s.trim())
                       : null;
             }
 

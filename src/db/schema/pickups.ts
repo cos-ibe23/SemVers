@@ -54,7 +54,7 @@ export const pickupResponseSchema = z.object({
         boxId: z.number().nullable(),
         category: z.string(),
         model: z.string().nullable(),
-        imei: z.string().nullable(),
+        serialOrImei: z.string().nullable(),
         estimatedWeightLb: z.string().nullable(),
         clientShippingUsd: z.string().nullable(),
         createdAt: z.date(),
@@ -77,7 +77,7 @@ export const createPickupBodySchema = z.object({
     items: z.array(z.object({
         category: z.string().min(1).max(100),
         model: z.string().max(255).optional(),
-        imei: z.string().max(50).optional(),
+        serialOrImei: z.string().max(50).optional(),
         estimatedWeightLb: z.number().nonnegative().optional(),
         clientShippingUsd: z.number().nonnegative().optional(),
     })).optional(),
@@ -95,7 +95,7 @@ export const updatePickupBodySchema = z.object({
         id: z.number().optional(), // Optional ID for updates, missing for creation
         category: z.string().min(1).max(100),
         model: z.string().max(255).optional(),
-        imei: z.string().max(50).optional(),
+        serialOrImei: z.string().max(50).optional(),
         estimatedWeightLb: z.number().nonnegative().optional(),
         clientShippingUsd: z.number().nonnegative().optional(),
     })).optional(),

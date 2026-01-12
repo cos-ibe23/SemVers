@@ -23,7 +23,7 @@ export interface CreatePickupInput {
     items?: Array<{
         category: string;
         model?: string;
-        imei?: string;
+        serialOrImei?: string;
         estimatedWeightLb?: number;
         clientShippingUsd?: number;
     }>;
@@ -40,7 +40,7 @@ export interface UpdatePickupInput {
         id?: number;
         category: string;
         model?: string;
-        imei?: string;
+        serialOrImei?: string;
         estimatedWeightLb?: number;
         clientShippingUsd?: number;
     }>;
@@ -149,7 +149,7 @@ export class PickupService extends Service {
                         pickupId: pickup.id,
                         category: item.category,
                         model: item.model || null,
-                        imei: item.imei || null,
+                        serialOrImei: item.serialOrImei || null,
                         estimatedWeightLb: item.estimatedWeightLb?.toString() || '0',
                         clientShippingUsd: item.clientShippingUsd?.toString() || '0',
                     }));
@@ -384,7 +384,7 @@ export class PickupService extends Service {
                             pickupId: id,
                             category: item.category,
                             model: item.model || null,
-                            imei: item.imei || null,
+                            serialOrImei: item.serialOrImei || null,
                             estimatedWeightLb: item.estimatedWeightLb?.toString() || '0',
                             clientShippingUsd: item.clientShippingUsd?.toString() || '0',
                         };

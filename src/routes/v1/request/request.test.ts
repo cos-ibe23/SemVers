@@ -122,7 +122,7 @@ describe('Public Request API (Integration)', () => {
             meetupLocation: 'Lagos',
             pickupTime: new Date().toISOString(),
             links: ['https://example.com/1', 'https://example.com/2'],
-            imeis: ['123456789012345', '987654321098765'],
+            serialOrImeis: ['123456789012345', '987654321098765'],
         };
 
         const response = await app.request(`/v1/request/${shipperSlug}`, {
@@ -137,7 +137,7 @@ describe('Public Request API (Integration)', () => {
         expect(response.status).toBe(HttpStatusCodes.CREATED);
         const body = await response.json();
         expect(body.links).toEqual(['https://example.com/1', 'https://example.com/2']);
-        expect(body.imeis).toEqual(['123456789012345', '987654321098765']);
+        expect(body.serialOrImeis).toEqual(['123456789012345', '987654321098765']);
     });
 
     it('should accept links/imeis as comma-separated strings and store as arrays', async () => {
@@ -146,7 +146,7 @@ describe('Public Request API (Integration)', () => {
             meetupLocation: 'Abuja',
             pickupTime: new Date().toISOString(),
             links: 'https://example.com/a, https://example.com/b',
-            imeis: '11111, 22222',
+            serialOrImeis: '11111, 22222',
         };
 
         const response = await app.request(`/v1/request/${shipperSlug}`, {
@@ -161,7 +161,7 @@ describe('Public Request API (Integration)', () => {
         expect(response.status).toBe(HttpStatusCodes.CREATED);
         const body = await response.json();
         expect(body.links).toEqual(['https://example.com/a', 'https://example.com/b']);
-        expect(body.imeis).toEqual(['11111', '22222']);
+        expect(body.serialOrImeis).toEqual(['11111', '22222']);
     });
     it('should create pickup from request and update request status', async () => {
         // 1. Create a request

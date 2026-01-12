@@ -42,7 +42,7 @@ export interface CreatePublicRequestInput {
     agreedPrice?: number;
     itemDescription?: string;
     links?: string | string[];
-    imeis?: string | string[];
+    serialOrImeis?: string | string[];
 }
 
 /**
@@ -155,10 +155,10 @@ export class PublicRequestService extends Service {
                         : input.links
                           ? input.links.split(',').map((s) => s.trim())
                           : null,
-                    imeis: Array.isArray(input.imeis)
-                        ? input.imeis
-                        : input.imeis
-                          ? input.imeis.split(',').map((s) => s.trim())
+                    serialOrImeis: Array.isArray(input.serialOrImeis)
+                        ? input.serialOrImeis
+                        : input.serialOrImeis
+                          ? input.serialOrImeis.split(',').map((s) => s.trim())
                           : null,
                     status: PickupRequestStatus.PENDING,
                 })

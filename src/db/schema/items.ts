@@ -18,7 +18,7 @@ export const items = pgTable('items', {
         .references(() => boxes.id, { onDelete: 'set null' }),
     category: varchar('category', { length: 100 }).notNull(),
     model: varchar('model', { length: 255 }),
-    imei: varchar('imei', { length: 50 }),
+    serialOrImei: varchar('serial_or_imei', { length: 50 }),
     estimatedWeightLb: decimal('estimated_weight_lb', { precision: 8, scale: 2 }).default('0'),
     clientShippingUsd: decimal('client_shipping_usd', { precision: 10, scale: 2 }).default('0'),
     ...timestamps(),
@@ -39,7 +39,7 @@ export const itemResponseSchema = z.object({
     boxId: z.number().nullable(),
     category: z.string(),
     model: z.string().nullable(),
-    imei: z.string().nullable(),
+    serialOrImei: z.string().nullable(),
     estimatedWeightLb: z.string().nullable(),
     clientShippingUsd: z.string().nullable(),
     createdAt: z.date(),
@@ -61,7 +61,7 @@ export type ItemTemplate = z.infer<typeof itemTemplateSchema>;
 export const createItemRequestSchema = z.object({
     category: z.string().min(1).max(100),
     model: z.string().max(255).optional(),
-    imei: z.string().max(50).optional(),
+    serialOrImei: z.string().max(50).optional(),
     estimatedWeightLb: z.number().nonnegative().optional(),
     clientShippingUsd: z.number().nonnegative().optional(),
 });
@@ -69,7 +69,7 @@ export const createItemRequestSchema = z.object({
 export const updateItemRequestSchema = z.object({
     category: z.string().min(1).max(100).optional(),
     model: z.string().max(255).nullable().optional(),
-    imei: z.string().max(50).nullable().optional(),
+    serialOrImei: z.string().max(50).nullable().optional(),
     estimatedWeightLb: z.number().nonnegative().optional(),
     clientShippingUsd: z.number().nonnegative().optional(),
 });

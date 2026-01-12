@@ -34,7 +34,7 @@ export const pickupRequests = pgTable('pickup_requests', {
     itemDescription: text('item_description'),
     links: text('links').array(),
     sellerMetadata: jsonb('seller_metadata').$type<SellerMetadata>(),
-    imeis: text('imeis').array(),
+    serialOrImeis: text('serial_or_imeis').array(),
     status: pickupRequestStatusEnum('status').default(PickupRequestStatus.PENDING),
     convertedPickupId: integer('converted_pickup_id').references(() => pickups.id, { onDelete: 'set null' }),
     ...timestamps(),
@@ -70,7 +70,7 @@ export const pickupRequestResponseSchema = z.object({
     itemDescription: z.string().nullable(),
     links: z.array(z.string()).nullable(),
     sellerMetadata: sellerMetadataSchema.nullable(),
-    imeis: z.array(z.string()).nullable(),
+    serialOrImeis: z.array(z.string()).nullable(),
     status: z.enum(PICKUP_REQUEST_STATUSES),
     convertedPickupId: z.number().nullable(),
     createdAt: z.date(),
@@ -91,7 +91,7 @@ export const createPickupRequestPublicSchema = z.object({
     agreedPrice: z.number().positive().optional(),
     itemDescription: z.string().optional(),
     links: z.union([z.string(), z.array(z.string())]).optional(),
-    imeis: z.union([z.string(), z.array(z.string())]).optional(),
+    serialOrImeis: z.union([z.string(), z.array(z.string())]).optional(),
 });
 
 
@@ -107,6 +107,6 @@ export const updatePickupRequestSchema = z.object({
     agreedPrice: z.number().positive().nullable().optional(),
     itemDescription: z.string().nullable().optional(),
     links: z.union([z.string(), z.array(z.string())]).optional(),
-    imeis: z.union([z.string(), z.array(z.string())]).optional(),
+    serialOrImeis: z.union([z.string(), z.array(z.string())]).optional(),
     status: z.enum([PickupRequestStatus.REJECTED] as const).optional(),
 });

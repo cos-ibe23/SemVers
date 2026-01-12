@@ -12,7 +12,7 @@ import { Service, type ServiceOptions } from './service';
 export interface CreateItemInput {
     category: string;
     model?: string;
-    imei?: string;
+    serialOrImei?: string;
     estimatedWeightLb?: number;
     clientShippingUsd?: number;
 }
@@ -20,7 +20,7 @@ export interface CreateItemInput {
 export interface UpdateItemInput {
     category?: string;
     model?: string | null;
-    imei?: string | null;
+    serialOrImei?: string | null;
     estimatedWeightLb?: number;
     clientShippingUsd?: number;
 }
@@ -62,7 +62,7 @@ export class ItemService extends Service {
                     pickupId,
                     category: input.category,
                     model: input.model || null,
-                    imei: input.imei || null,
+                    serialOrImei: input.serialOrImei || null,
                     estimatedWeightLb: input.estimatedWeightLb?.toString() || '0',
                     clientShippingUsd: input.clientShippingUsd?.toString() || '0',
                 })
@@ -183,7 +183,7 @@ export class ItemService extends Service {
 
             if (input.category !== undefined) updateData.category = input.category;
             if (input.model !== undefined) updateData.model = input.model;
-            if (input.imei !== undefined) updateData.imei = input.imei;
+            if (input.serialOrImei !== undefined) updateData.serialOrImei = input.serialOrImei;
             if (input.estimatedWeightLb !== undefined) updateData.estimatedWeightLb = input.estimatedWeightLb.toString();
             if (input.clientShippingUsd !== undefined) updateData.clientShippingUsd = input.clientShippingUsd.toString();
 

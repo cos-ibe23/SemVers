@@ -63,8 +63,8 @@ describe('Pickups API (Integration)', () => {
                 clientUserId: clientAuth.user.id,
                 itemPriceUsd: 500, // Overall price
                 items: [
-                    { category: 'Laptop', model: 'MacBook Pro', estimatedWeightLb: 5, clientShippingUsd: 50 },
-                    { category: 'Phone', model: 'iPhone 15', estimatedWeightLb: 1, clientShippingUsd: 20 },
+                    { category: 'Laptop', model: 'MacBook Pro', serialOrImei: 'SN123456', estimatedWeightLb: 5, clientShippingUsd: 50 },
+                    { category: 'Phone', model: 'iPhone 15', serialOrImei: 'IMEI99999', estimatedWeightLb: 1, clientShippingUsd: 20 },
                 ],
             };
 

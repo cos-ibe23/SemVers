@@ -67,7 +67,7 @@ describe('Items API (Integration)', () => {
             const payload = {
                 category: 'Phone',
                 model: 'iPhone 15',
-                imei: '123456789012345',
+                serialOrImei: '123456789012345',
                 // imeiSource removed/optional
                 estimatedWeightLb: 0.6,
                 clientShippingUsd: 30,

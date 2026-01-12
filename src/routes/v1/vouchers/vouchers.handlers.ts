@@ -15,7 +15,7 @@ export const getPendingVouches: AppRouteHandler<GetPendingVouchesRoute> = async 
     const formattedRequests = requests.map(req => ({
         ...req,
         requesterImage: req.requesterImage ?? null,
-        status: req.status as 'PENDING' | 'APPROVED' | 'DECLINED', // Assertion since DB ensures valid enum
+        status: req.status as 'PENDING' | 'APPROVED' | 'DECLINED',
         requestedAt: req.requestedAt.toISOString(),
     }));
     return c.json(formattedRequests, HttpStatusCodes.OK);

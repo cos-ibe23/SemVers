@@ -3,10 +3,8 @@ import {
     pickups,
     pickupRequests,
     fxRates,
-    selectPickupSchema,
     pickupResponseSchema,
     items,
-    createItemRequestSchema,
     type PickupResponse,
 } from '../db/schema';
 import { ApiError, ForbiddenError, NotFoundError, BadRequestError } from '../lib/errors';
@@ -234,9 +232,6 @@ export class PickupService extends Service {
         }
     }
 
-    /**
-     * List pickups for the shipper.
-     */
     /**
      * List pickups for the shipper.
      */

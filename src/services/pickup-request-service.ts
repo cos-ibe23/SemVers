@@ -1,8 +1,6 @@
 import { eq, and, desc, ilike, or, count } from 'drizzle-orm';
 import {
     pickupRequests,
-    pickups,
-    fxRates,
     pickupRequestResponseSchema,
     type PickupRequestResponse,
     type SellerMetadata,
@@ -144,9 +142,6 @@ export class PickupRequestService extends Service {
         }
     }
 
-    /**
-     * Update a pickup request.
-     */
     /**
      * Update a pickup request.
      */

@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { getTestDb, cleanTestDb, closeTestDb } from '@test/helpers';
 import { createIntegrationTestApp, signupAndLogin } from '@test/helpers/integration';
-import { createUserFactory, UserFactory } from '@test/factories';
 import * as HttpStatusCodes from '../../../lib/http-status-codes';
 import { items } from '../../../db/schema/items';
 import { pickupRequests } from '../../../db/schema/pickup-requests';
@@ -13,14 +12,12 @@ import { user } from '../../../db/schema/auth';
 describe('Pickups API (Integration)', () => {
     const db = getTestDb();
     const app = createIntegrationTestApp();
-    let userFactory: UserFactory;
 
     let shipperAuth: { headers: Record<string, string>, user: any };
     let clientAuth: { headers: Record<string, string>, user: any };
 
     beforeEach(async () => {
         await cleanTestDb();
-        userFactory = createUserFactory(db);
         const uniqueId = Math.random().toString(36).substring(7);
 
         // 1. Create Shipper
@@ -182,7 +179,6 @@ describe('Pickups API (Integration)', () => {
             expect(response.status).toBe(HttpStatusCodes.OK);
             const body = await response.json();
             expect(body.itemPriceUsd).toBe('200.00');
-            expect(body.notes).toBe('Updated notes');
             expect(body.notes).toBe('Updated notes');
         });
 

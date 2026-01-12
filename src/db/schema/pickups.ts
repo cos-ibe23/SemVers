@@ -47,6 +47,19 @@ export const pickupResponseSchema = z.object({
     sourceRequestId: z.number().nullable(),
     fxRateId: z.number().nullable(),
     totalPriceUsd: z.string(),
+    totalWeightLb: z.string(),
+    items: z.array(z.object({
+        id: z.number(),
+        pickupId: z.number(),
+        boxId: z.number().nullable(),
+        category: z.string(),
+        model: z.string().nullable(),
+        imei: z.string().nullable(),
+        estimatedWeightLb: z.string().nullable(),
+        clientShippingUsd: z.string().nullable(),
+        createdAt: z.date(),
+        updatedAt: z.date(),
+    })),
     createdAt: z.date(),
     updatedAt: z.date(),
 });
@@ -78,4 +91,12 @@ export const updatePickupBodySchema = z.object({
     pickupDate: z.string().nullable().optional(),
     status: z.enum(PICKUP_STATUSES).optional(),
     fxRateId: z.number().nullable().optional(),
+    items: z.array(z.object({
+        id: z.number().optional(), // Optional ID for updates, missing for creation
+        category: z.string().min(1).max(100),
+        model: z.string().max(255).optional(),
+        imei: z.string().max(50).optional(),
+        estimatedWeightLb: z.number().nonnegative().optional(),
+        clientShippingUsd: z.number().nonnegative().optional(),
+    })).optional(),
 });

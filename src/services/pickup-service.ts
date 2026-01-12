@@ -1,4 +1,4 @@
-import { eq, and, desc, count, sql, getTableColumns } from 'drizzle-orm';
+import { eq, and, desc, count, sql, getTableColumns, inArray } from 'drizzle-orm';
 import {
     pickups,
     pickupRequests,
@@ -38,6 +38,14 @@ export interface UpdatePickupInput {
     pickupDate?: string | null;
     status?: 'DRAFT' | 'CONFIRMED' | 'CANCELLED';
     fxRateId?: number | null;
+    items?: Array<{
+        id?: number;
+        category: string;
+        model?: string;
+        imei?: string;
+        estimatedWeightLb?: number;
+        clientShippingUsd?: number;
+    }>;
 }
 
 export interface ListPickupsOptions {
@@ -183,31 +191,41 @@ export class PickupService extends Service {
         try {
             const ownerUserId = this.requireUserId();
 
-            const [result] = await this.db
-                .select({
-                    ...getTableColumns(pickups),
-                    totalShipping: sql<string>`coalesce(sum(${items.clientShippingUsd}), '0')`.as('total_shipping'),
-                })
+            const [pickup] = await this.db
+                .select()
                 .from(pickups)
-                .leftJoin(items, eq(items.pickupId, pickups.id))
                 .where(eq(pickups.id, id))
-                .groupBy(pickups.id)
                 .limit(1);
 
-            if (!result) {
+            if (!pickup) {
                 throw new NotFoundError('Pickup not found');
             }
 
             // Check ownership
-            if (!this.userCan.isAdmin() && result.ownerUserId !== ownerUserId) {
+            if (!this.userCan.isAdmin() && pickup.ownerUserId !== ownerUserId) {
                 throw new ForbiddenError('You are not authorized to view this pickup');
             }
 
-            const total = Number(result.pickupFeeUsd) + Number(result.itemPriceUsd) + Number(result.totalShipping);
+            // Fetch items
+            const pickupItems = await this.db
+                .select()
+                .from(items)
+                .where(eq(items.pickupId, id));
+
+            // Calculate total
+            const itemsShippingTotal = pickupItems.reduce((sum, item) => sum + Number(item.clientShippingUsd), 0);
+            const itemsWeightTotal = pickupItems.reduce((sum, item) => sum + Number(item.estimatedWeightLb), 0);
+            const total = Number(pickup.pickupFeeUsd) + Number(pickup.itemPriceUsd) + itemsShippingTotal;
 
             return pickupResponseSchema.parse({
-                ...result,
+                ...pickup,
+                items: pickupItems.map(item => ({
+                    ...item,
+                    estimatedWeightLb: item.estimatedWeightLb?.toString() || null,
+                    clientShippingUsd: item.clientShippingUsd?.toString() || null
+                })),
                 totalPriceUsd: total.toFixed(2),
+                totalWeightLb: itemsWeightTotal.toFixed(2),
             });
         } catch (error) {
             const apiError = ApiError.parse(error);
@@ -216,6 +234,9 @@ export class PickupService extends Service {
         }
     }
 
+    /**
+     * List pickups for the shipper.
+     */
     /**
      * List pickups for the shipper.
      */
@@ -252,32 +273,58 @@ export class PickupService extends Service {
                 .from(pickups)
                 .where(whereClause);
 
-            // Get paginated results
-            const results = await this.db
-                .select({
-                    ...getTableColumns(pickups),
-                    totalShipping: sql<string>`coalesce(sum(${items.clientShippingUsd}), '0')`.as('total_shipping'),
-                })
+            // Get paginated results (just pickups first)
+            const pickupResults = await this.db
+                .select()
                 .from(pickups)
-                .leftJoin(items, eq(items.pickupId, pickups.id))
                 .where(whereClause)
-                .groupBy(pickups.id)
                 .orderBy(desc(pickups.createdAt))
                 .limit(limit)
                 .offset(offset);
 
+            // Fetch items for these pickups
+            const pickupIds = pickupResults.map(p => p.id);
+            const itemsMap = new Map<number, typeof items.$inferSelect[]>();
+
+            if (pickupIds.length > 0) {
+                const allItems = await this.db
+                    .select()
+                    .from(items)
+                    .where(inArray(items.pickupId, pickupIds));
+
+                // Verify if IN clause syntax is correct for Drizzle with arrays, otherwise use iteration or 'inArray' helper if available
+                // Drizzle 'inArray' is preferred: import { inArray } from 'drizzle-orm';
+                // I need to import inArray from drizzle-orm. For now, assuming I'll fix imports.
+                
+                allItems.forEach(item => {
+                    const existing = itemsMap.get(item.pickupId) || [];
+                    existing.push(item);
+                    itemsMap.set(item.pickupId, existing);
+                });
+            }
+
             return {
-                data: results.map((r) => {
-                    const total = Number(r.pickupFeeUsd) + Number(r.itemPriceUsd) + Number(r.totalShipping);
+                data: pickupResults.map((r) => {
+                    const rItems = itemsMap.get(r.id) || [];
+                    const itemsShipping = rItems.reduce((sum, i) => sum + Number(i.clientShippingUsd), 0);
+                    const itemsWeight = rItems.reduce((sum, i) => sum + Number(i.estimatedWeightLb), 0);
+                    const total = Number(r.pickupFeeUsd) + Number(r.itemPriceUsd) + itemsShipping;
+                    
                     return pickupResponseSchema.parse({
                         ...r,
+                        items: rItems.map(item => ({
+                            ...item,
+                            estimatedWeightLb: item.estimatedWeightLb?.toString() || null,
+                            clientShippingUsd: item.clientShippingUsd?.toString() || null
+                        })),
                         totalPriceUsd: total.toFixed(2),
+                        totalWeightLb: itemsWeight.toFixed(2),
                     });
                 }),
                 total,
                 page,
                 limit,
-                hasMore: offset + results.length < total,
+                hasMore: offset + pickupResults.length < total,
             };
         } catch (error) {
             const apiError = ApiError.parse(error);
@@ -318,20 +365,48 @@ export class PickupService extends Service {
                 }
             }
 
-            const updateData: Record<string, unknown> = {};
+            await this.db.transaction(async (tx) => {
+                const updateData: Record<string, unknown> = {};
 
-            if (input.pickupFeeUsd !== undefined) updateData.pickupFeeUsd = input.pickupFeeUsd.toString();
-            if (input.itemPriceUsd !== undefined) updateData.itemPriceUsd = input.itemPriceUsd.toString();
-            if (input.notes !== undefined) updateData.notes = input.notes;
-            if (input.pickupDate !== undefined) updateData.pickupDate = input.pickupDate;
-            if (input.status !== undefined) updateData.status = input.status;
-            if (input.fxRateId !== undefined) updateData.fxRateId = input.fxRateId;
+                if (input.pickupFeeUsd !== undefined) updateData.pickupFeeUsd = input.pickupFeeUsd.toString();
+                if (input.itemPriceUsd !== undefined) updateData.itemPriceUsd = input.itemPriceUsd.toString();
+                if (input.notes !== undefined) updateData.notes = input.notes;
+                if (input.pickupDate !== undefined) updateData.pickupDate = input.pickupDate;
+                if (input.status !== undefined) updateData.status = input.status;
+                if (input.fxRateId !== undefined) updateData.fxRateId = input.fxRateId;
 
-            const [updated] = await this.db
-                .update(pickups)
-                .set(updateData)
-                .where(eq(pickups.id, id))
-                .returning();
+                if (Object.keys(updateData).length > 0) {
+                    await tx
+                    .update(pickups)
+                    .set(updateData)
+                    .where(eq(pickups.id, id));
+                }
+
+                // Handle items upsert
+                if (input.items) {
+                    for (const item of input.items) {
+                        const itemData = {
+                            pickupId: id,
+                            category: item.category,
+                            model: item.model || null,
+                            imei: item.imei || null,
+                            estimatedWeightLb: item.estimatedWeightLb?.toString() || '0',
+                            clientShippingUsd: item.clientShippingUsd?.toString() || '0',
+                        };
+
+                        if (item.id) {
+                            // Update existing
+                            await tx
+                                .update(items)
+                                .set(itemData)
+                                .where(and(eq(items.id, item.id), eq(items.pickupId, id)));
+                        } else {
+                            // Insert new
+                            await tx.insert(items).values(itemData);
+                        }
+                    }
+                }
+            });
 
             this.log('pickup_update', { pickupId: id, updates: Object.keys(input) });
 

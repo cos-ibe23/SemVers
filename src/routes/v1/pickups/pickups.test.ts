@@ -90,6 +90,10 @@ describe('Pickups API (Integration)', () => {
             // Verify Total Price
             // itemPriceUsd (500) + itemsClientShipping (50 + 20) + pickupFeeUsd (0)
             expect(pickup.totalPriceUsd).toBe('570.00');
+
+            // Verify Total Weight
+            // 5 + 1 = 6
+            expect(pickup.totalWeightLb).toBe('6.00');
         });
 
         it('should create a pickup from a source request and update status', async () => {
@@ -179,6 +183,58 @@ describe('Pickups API (Integration)', () => {
             const body = await response.json();
             expect(body.itemPriceUsd).toBe('200.00');
             expect(body.notes).toBe('Updated notes');
+            expect(body.notes).toBe('Updated notes');
+        });
+
+        it('should add and update items', async () => {
+            // 1. Create pickup with 1 item
+            const [pickup] = await db.insert(pickups).values({
+                ownerUserId: shipperAuth.user.id,
+                clientUserId: clientAuth.user.id,
+                status: PickupStatus.DRAFT,
+            }).returning();
+            
+            const [item] = await db.insert(items).values({
+                pickupId: pickup.id,
+                category: 'Phone',
+                clientShippingUsd: '20',
+                estimatedWeightLb: '1.5',
+            }).returning();
+
+            // 2. Add new item and update existing
+            const updatePayload = {
+                items: [
+                    { id: item.id, category: 'Updated Phone', clientShippingUsd: 30, estimatedWeightLb: 2 }, // Update
+                    { category: 'Laptop', clientShippingUsd: 50, estimatedWeightLb: 5.5 } // Create
+                ]
+            };
+
+            const response = await app.request(`/v1/pickups/${pickup.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', ...shipperAuth.headers },
+                body: JSON.stringify(updatePayload),
+            });
+
+            expect(response.status).toBe(HttpStatusCodes.OK);
+            const body = await response.json();
+            
+            expect(body.items).toHaveLength(2);
+            const updatedItem = body.items.find((i: any) => i.id === item.id);
+            const newItem = body.items.find((i: any) => i.id !== item.id);
+
+            expect(updatedItem.category).toBe('Updated Phone');
+            expect(updatedItem.clientShippingUsd).toBe('30.00');
+            expect(updatedItem.estimatedWeightLb).toBe('2.00');
+            
+            expect(newItem.category).toBe('Laptop');
+            expect(newItem.clientShippingUsd).toBe('50.00');
+            expect(newItem.estimatedWeightLb).toBe('5.50');
+
+            // Verify Total Price: PickupFee(0) + ItemPrice(0) + Shipping(30+50) = 80
+            expect(body.totalPriceUsd).toBe('80.00');
+
+            // Verify Total Weight: 2 + 5.5 = 7.5
+            expect(body.totalWeightLb).toBe('7.50');
         });
     });
 

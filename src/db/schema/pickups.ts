@@ -14,16 +14,13 @@ export const pickups = pgTable('pickups', {
         .notNull()
         .references(() => user.id, { onDelete: 'cascade' }),
     clientUserId: text('client_user_id')
-        .notNull()
         .references(() => user.id, { onDelete: 'cascade' }),
     pickupFeeUsd: decimal('pickup_fee_usd', { precision: 10, scale: 2 }).default('0'),
     itemPriceUsd: decimal('item_price_usd', { precision: 10, scale: 2 }).default('0'),
     notes: text('notes'),
     pickupDate: date('pickup_date'),
     status: pickupStatusEnum('status').default('DRAFT'),
-    sourceRequestId: integer('source_request_id'), // references pickupRequests if converted
-
-    // FX rate used for this pickup (snapshot at time of conversion/creation)
+    sourceRequestId: integer('source_request_id'),
     fxRateId: integer('fx_rate_id').references(() => fxRates.id, { onDelete: 'set null' }),
 
     ...timestamps(),
@@ -41,7 +38,7 @@ export type Pickup = typeof pickups.$inferSelect;
 export const pickupResponseSchema = z.object({
     id: z.number(),
     ownerUserId: z.string(),
-    clientUserId: z.string(),
+    clientUserId: z.string().nullable(),
     pickupFeeUsd: z.string().nullable(),
     itemPriceUsd: z.string().nullable(),
     notes: z.string().nullable(),
@@ -57,12 +54,19 @@ export type PickupResponse = z.infer<typeof pickupResponseSchema>;
 
 // Request schemas for pickups
 export const createPickupBodySchema = z.object({
-    clientUserId: z.string(),
+    clientUserId: z.string().optional(),
     pickupFeeUsd: z.number().nonnegative().optional(),
     itemPriceUsd: z.number().nonnegative().optional(),
     notes: z.string().optional(),
     pickupDate: z.string().optional(), // ISO date string
     fxRateId: z.number().optional(),
+    items: z.array(z.object({
+        category: z.string().min(1).max(100),
+        model: z.string().max(255).optional(),
+        imei: z.string().max(50).optional(),
+        estimatedWeightLb: z.number().nonnegative().optional(),
+        clientShippingUsd: z.number().nonnegative().optional(),
+    })).optional(),
     sourceRequestId: z.number().optional(),
 });
 

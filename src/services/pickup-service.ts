@@ -5,6 +5,8 @@ import {
     fxRates,
     selectPickupSchema,
     pickupResponseSchema,
+    items,
+    createItemRequestSchema,
     type PickupResponse,
 } from '../db/schema';
 import { ApiError, ForbiddenError, NotFoundError, BadRequestError } from '../lib/errors';
@@ -13,13 +15,20 @@ import { Service, type ServiceOptions } from './service';
 import { PickupStatus, PickupRequestStatus } from '../constants/enums';
 
 export interface CreatePickupInput {
-    clientUserId: string;
+    clientUserId?: string;
     pickupFeeUsd?: number;
     itemPriceUsd?: number;
     notes?: string;
     pickupDate?: string;
     fxRateId?: number;
     sourceRequestId?: number;
+    items?: Array<{
+        category: string;
+        model?: string;
+        imei?: string;
+        estimatedWeightLb?: number;
+        clientShippingUsd?: number;
+    }>;
 }
 
 export interface UpdatePickupInput {
@@ -67,8 +76,8 @@ export class PickupService extends Service {
             if (input.sourceRequestId) {
                 const [request] = await this.db
                     .select()
-                    .from(pickupRequests) // We need this imported, usually handled by adding it to imports
-                    .where(eq(pickupRequests.id, input.sourceRequestId)) // Need pickupRequests imported
+                    .from(pickupRequests)
+                    .where(eq(pickupRequests.id, input.sourceRequestId))
                     .limit(1);
 
                 if (!request) {
@@ -105,46 +114,61 @@ export class PickupService extends Service {
             }
 
             // Use defaults from source request if available and not overridden
-            const clientUserId = input.clientUserId || sourceRequest?.clientUserId;
-            if (!clientUserId) {
-                throw new BadRequestError('Client user ID is required'); // Should be caught by Zod but good safety
-            }
+            const clientUserId = input.clientUserId || sourceRequest?.clientUserId || null;
 
             // Default prices from request if not provided
             const itemPriceUsd = input.itemPriceUsd !== undefined 
                 ? input.itemPriceUsd.toString() 
                 : sourceRequest?.agreedPrice || '0';
 
-            const [pickup] = await this.db
-                .insert(pickups)
-                .values({
-                    ownerUserId,
-                    clientUserId: clientUserId,
-                    pickupFeeUsd: input.pickupFeeUsd?.toString() || '0',
-                    itemPriceUsd: itemPriceUsd,
-                    notes: input.notes || null,
-                    pickupDate: input.pickupDate || sourceRequest?.pickupTime.toISOString().split('T')[0] || null,
-                    fxRateId: input.fxRateId || null,
-                    sourceRequestId: input.sourceRequestId || null,
-                    status: PickupStatus.DRAFT,
-                })
-                .returning();
-
-            // If created from request, update request status
-            if (input.sourceRequestId) {
-                await this.db
-                    .update(pickupRequests)
-                    .set({
-                        status: PickupRequestStatus.CONVERTED,
-                        convertedPickupId: pickup.id,
-                        updatedAt: new Date(),
+            const result = await this.db.transaction(async (tx) => {
+                const [pickup] = await tx
+                    .insert(pickups)
+                    .values({
+                        ownerUserId,
+                        clientUserId: clientUserId,
+                        pickupFeeUsd: input.pickupFeeUsd?.toString() || '0',
+                        itemPriceUsd: itemPriceUsd,
+                        notes: input.notes || null,
+                        pickupDate: input.pickupDate || sourceRequest?.pickupTime.toISOString().split('T')[0] || null,
+                        fxRateId: input.fxRateId || null,
+                        sourceRequestId: input.sourceRequestId || null,
+                        status: PickupStatus.DRAFT,
                     })
-                    .where(eq(pickupRequests.id, input.sourceRequestId));
-            }
+                    .returning();
 
-            this.log('pickup_create', { pickupId: pickup.id, clientUserId: clientUserId, sourceRequestId: input.sourceRequestId });
+                // Insert items if provided
+                if (input.items && input.items.length > 0) {
+                    const itemsToInsert = input.items.map(item => ({
+                        pickupId: pickup.id,
+                        category: item.category,
+                        model: item.model || null,
+                        imei: item.imei || null,
+                        estimatedWeightLb: item.estimatedWeightLb?.toString() || '0',
+                        clientShippingUsd: item.clientShippingUsd?.toString() || '0',
+                    }));
+                    
+                    await tx.insert(items).values(itemsToInsert);
+                }
 
-            return pickupResponseSchema.parse(pickup);
+                // If created from request, update request status
+                if (input.sourceRequestId) {
+                    await tx
+                        .update(pickupRequests)
+                        .set({
+                            status: PickupRequestStatus.CONVERTED,
+                            convertedPickupId: pickup.id,
+                            updatedAt: new Date(),
+                        })
+                        .where(eq(pickupRequests.id, input.sourceRequestId));
+                }
+
+                return pickup;
+            });
+
+            this.log('pickup_create', { pickupId: result.id, clientUserId: clientUserId, sourceRequestId: input.sourceRequestId });
+
+            return pickupResponseSchema.parse(result);
         } catch (error) {
             const apiError = ApiError.parse(error);
             apiError.log({ method: 'PickupService.create' });

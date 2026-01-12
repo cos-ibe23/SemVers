@@ -1,0 +1,1 @@
+ALTER TABLE "pickups" ALTER COLUMN "client_user_id" DROP NOT NULL;

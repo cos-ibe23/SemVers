@@ -43,6 +43,13 @@
       "when": 1768170449205,
       "tag": "0005_brainy_the_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1768203343381,
+      "tag": "0006_safe_puck",
+      "breakpoints": true
     }
   ]
 }

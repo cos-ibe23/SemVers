@@ -58,6 +58,7 @@ describe('Pickups API (Integration)', () => {
             expect(body.clientUserId).toBeNull();
             expect(body.itemPriceUsd).toBe('150.00');
             expect(body.status).toBe(PickupStatus.DRAFT);
+            expect(body.totalPriceUsd).toBe('150.00');
         });
 
         it('should create a pickup with nested items', async () => {
@@ -85,6 +86,10 @@ describe('Pickups API (Integration)', () => {
             expect(createdItems).toHaveLength(2);
             expect(createdItems.find(i => i.category === 'Laptop')).toBeDefined();
             expect(createdItems.find(i => i.category === 'Phone')).toBeDefined();
+
+            // Verify Total Price
+            // itemPriceUsd (500) + itemsClientShipping (50 + 20) + pickupFeeUsd (0)
+            expect(pickup.totalPriceUsd).toBe('570.00');
         });
 
         it('should create a pickup from a source request and update status', async () => {

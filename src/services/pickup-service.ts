@@ -1,4 +1,4 @@
-import { eq, and, desc, count } from 'drizzle-orm';
+import { eq, and, desc, count, sql, getTableColumns } from 'drizzle-orm';
 import {
     pickups,
     pickupRequests,
@@ -168,7 +168,7 @@ export class PickupService extends Service {
 
             this.log('pickup_create', { pickupId: result.id, clientUserId: clientUserId, sourceRequestId: input.sourceRequestId });
 
-            return pickupResponseSchema.parse(result);
+            return this.getById(result.id);
         } catch (error) {
             const apiError = ApiError.parse(error);
             apiError.log({ method: 'PickupService.create' });
@@ -183,22 +183,32 @@ export class PickupService extends Service {
         try {
             const ownerUserId = this.requireUserId();
 
-            const [pickup] = await this.db
-                .select()
+            const [result] = await this.db
+                .select({
+                    ...getTableColumns(pickups),
+                    totalShipping: sql<string>`coalesce(sum(${items.clientShippingUsd}), '0')`.as('total_shipping'),
+                })
                 .from(pickups)
+                .leftJoin(items, eq(items.pickupId, pickups.id))
                 .where(eq(pickups.id, id))
+                .groupBy(pickups.id)
                 .limit(1);
 
-            if (!pickup) {
+            if (!result) {
                 throw new NotFoundError('Pickup not found');
             }
 
             // Check ownership
-            if (!this.userCan.isAdmin() && pickup.ownerUserId !== ownerUserId) {
+            if (!this.userCan.isAdmin() && result.ownerUserId !== ownerUserId) {
                 throw new ForbiddenError('You are not authorized to view this pickup');
             }
 
-            return pickupResponseSchema.parse(pickup);
+            const total = Number(result.pickupFeeUsd) + Number(result.itemPriceUsd) + Number(result.totalShipping);
+
+            return pickupResponseSchema.parse({
+                ...result,
+                totalPriceUsd: total.toFixed(2),
+            });
         } catch (error) {
             const apiError = ApiError.parse(error);
             apiError.log({ method: 'PickupService.getById' });
@@ -244,15 +254,26 @@ export class PickupService extends Service {
 
             // Get paginated results
             const results = await this.db
-                .select()
+                .select({
+                    ...getTableColumns(pickups),
+                    totalShipping: sql<string>`coalesce(sum(${items.clientShippingUsd}), '0')`.as('total_shipping'),
+                })
                 .from(pickups)
+                .leftJoin(items, eq(items.pickupId, pickups.id))
                 .where(whereClause)
+                .groupBy(pickups.id)
                 .orderBy(desc(pickups.createdAt))
                 .limit(limit)
                 .offset(offset);
 
             return {
-                data: results.map((r) => pickupResponseSchema.parse(r)),
+                data: results.map((r) => {
+                    const total = Number(r.pickupFeeUsd) + Number(r.itemPriceUsd) + Number(r.totalShipping);
+                    return pickupResponseSchema.parse({
+                        ...r,
+                        totalPriceUsd: total.toFixed(2),
+                    });
+                }),
                 total,
                 page,
                 limit,
@@ -314,7 +335,7 @@ export class PickupService extends Service {
 
             this.log('pickup_update', { pickupId: id, updates: Object.keys(input) });
 
-            return pickupResponseSchema.parse(updated);
+            return this.getById(id);
         } catch (error) {
             const apiError = ApiError.parse(error);
             apiError.log({ method: 'PickupService.update' });

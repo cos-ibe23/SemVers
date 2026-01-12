@@ -46,6 +46,7 @@ export const pickupResponseSchema = z.object({
     status: z.enum(PICKUP_STATUSES).nullable(),
     sourceRequestId: z.number().nullable(),
     fxRateId: z.number().nullable(),
+    totalPriceUsd: z.string(),
     createdAt: z.date(),
     updatedAt: z.date(),
 });

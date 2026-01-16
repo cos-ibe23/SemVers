@@ -15,13 +15,13 @@ WORKDIR /app
 RUN apk add --no-cache curl
 
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package.json ./
+COPY --from=builder /app/package*.json ./
 
 # Install prod-only deps
 RUN npm ci --omit=dev
 
 # Only copy runtime assets if required
-COPY --from=builder /app/drizzle ./drizzle
+COPY --from=builder /app/src/db/migrations ./src/db/migrations
 
 EXPOSE 4000
 

@@ -21,7 +21,18 @@ export const listBoxes: AppRouteHandler<ListBoxsRoute> = async (c) => {
         return c.json(result, HttpStatusCodes.OK);
     } catch (error: unknown) {
         const apiError = ApiError.parse(error);
-        return c.json(apiError.toResponseError(), apiError.statusCode as any);
+        switch (apiError.statusCode) {
+            case HttpStatusCodes.BAD_REQUEST:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.BAD_REQUEST);
+            case HttpStatusCodes.UNAUTHORIZED:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.UNAUTHORIZED);
+            case HttpStatusCodes.FORBIDDEN:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.FORBIDDEN);
+            case HttpStatusCodes.NOT_FOUND:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.NOT_FOUND);
+            default:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        }
     }
 };
 
@@ -33,7 +44,18 @@ export const createBox: AppRouteHandler<CreateBoxRoute> = async (c) => {
         return c.json(result, HttpStatusCodes.CREATED);
     } catch (error: unknown) {
         const apiError = ApiError.parse(error);
-        return c.json(apiError.toResponseError(), apiError.statusCode as any);
+        switch (apiError.statusCode) {
+            case HttpStatusCodes.BAD_REQUEST:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.BAD_REQUEST);
+            case HttpStatusCodes.UNAUTHORIZED:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.UNAUTHORIZED);
+            case HttpStatusCodes.FORBIDDEN:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.FORBIDDEN);
+            case HttpStatusCodes.NOT_FOUND:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.NOT_FOUND);
+            default:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        }
     }
 };
 
@@ -45,7 +67,18 @@ export const getBox: AppRouteHandler<GetBoxRoute> = async (c) => {
         return c.json(result, HttpStatusCodes.OK);
     } catch (error: unknown) {
         const apiError = ApiError.parse(error);
-        return c.json(apiError.toResponseError(), apiError.statusCode as any);
+        switch (apiError.statusCode) {
+            case HttpStatusCodes.BAD_REQUEST:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.BAD_REQUEST);
+            case HttpStatusCodes.UNAUTHORIZED:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.UNAUTHORIZED);
+            case HttpStatusCodes.FORBIDDEN:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.FORBIDDEN);
+            case HttpStatusCodes.NOT_FOUND:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.NOT_FOUND);
+            default:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        }
     }
 };
 
@@ -58,7 +91,18 @@ export const updateBox: AppRouteHandler<UpdateBoxRoute> = async (c) => {
         return c.json(result, HttpStatusCodes.OK);
     } catch (error: unknown) {
         const apiError = ApiError.parse(error);
-        return c.json(apiError.toResponseError(), apiError.statusCode as any);
+        switch (apiError.statusCode) {
+            case HttpStatusCodes.BAD_REQUEST:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.BAD_REQUEST);
+            case HttpStatusCodes.UNAUTHORIZED:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.UNAUTHORIZED);
+            case HttpStatusCodes.FORBIDDEN:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.FORBIDDEN);
+            case HttpStatusCodes.NOT_FOUND:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.NOT_FOUND);
+            default:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        }
     }
 };
 
@@ -71,7 +115,18 @@ export const transferBox: AppRouteHandler<TransferBoxRoute> = async (c) => {
         return c.json(result, HttpStatusCodes.OK);
     } catch (error: unknown) {
         const apiError = ApiError.parse(error);
-        return c.json(apiError.toResponseError(), apiError.statusCode as any);
+        switch (apiError.statusCode) {
+            case HttpStatusCodes.BAD_REQUEST:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.BAD_REQUEST);
+            case HttpStatusCodes.UNAUTHORIZED:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.UNAUTHORIZED);
+            case HttpStatusCodes.FORBIDDEN:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.FORBIDDEN);
+            case HttpStatusCodes.NOT_FOUND:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.NOT_FOUND);
+            default:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        }
     }
 };
 
@@ -84,7 +139,18 @@ export const addPickupsToBox: AppRouteHandler<AddPickupsToBoxRoute> = async (c) 
         return c.json(result, HttpStatusCodes.OK);
     } catch (error: unknown) {
         const apiError = ApiError.parse(error);
-        return c.json(apiError.toResponseError(), apiError.statusCode as any);
+        switch (apiError.statusCode) {
+            case HttpStatusCodes.BAD_REQUEST:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.BAD_REQUEST);
+            case HttpStatusCodes.UNAUTHORIZED:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.UNAUTHORIZED);
+            case HttpStatusCodes.FORBIDDEN:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.FORBIDDEN);
+            case HttpStatusCodes.NOT_FOUND:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.NOT_FOUND);
+            default:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        }
     }
 };
 
@@ -96,7 +162,18 @@ export const removePickupFromBox: AppRouteHandler<RemovePickupFromBoxRoute> = as
         return c.json(result, HttpStatusCodes.OK);
     } catch (error: unknown) {
         const apiError = ApiError.parse(error);
-        return c.json(apiError.toResponseError(), apiError.statusCode as any);
+        switch (apiError.statusCode) {
+            case HttpStatusCodes.BAD_REQUEST:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.BAD_REQUEST);
+            case HttpStatusCodes.UNAUTHORIZED:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.UNAUTHORIZED);
+            case HttpStatusCodes.FORBIDDEN:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.FORBIDDEN);
+            case HttpStatusCodes.NOT_FOUND:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.NOT_FOUND);
+            default:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        }
     }
 };
 
@@ -109,6 +186,17 @@ export const manageBoxItems: AppRouteHandler<ManageBoxItemsRoute> = async (c) =>
         return c.json(result, HttpStatusCodes.OK);
     } catch (error: unknown) {
         const apiError = ApiError.parse(error);
-        return c.json(apiError.toResponseError(), apiError.statusCode as any);
+        switch (apiError.statusCode) {
+            case HttpStatusCodes.BAD_REQUEST:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.BAD_REQUEST);
+            case HttpStatusCodes.UNAUTHORIZED:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.UNAUTHORIZED);
+            case HttpStatusCodes.FORBIDDEN:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.FORBIDDEN);
+            case HttpStatusCodes.NOT_FOUND:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.NOT_FOUND);
+            default:
+                return c.json(apiError.toResponseError(), HttpStatusCodes.INTERNAL_SERVER_ERROR);
+        }
     }
 };

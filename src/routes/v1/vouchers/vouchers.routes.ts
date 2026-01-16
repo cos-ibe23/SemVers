@@ -27,7 +27,11 @@ export const getPendingVouches = createRoute({
             z.array(vouchListItemSchema),
             'List of pending vouch requests'
         ),
+        [HttpStatusCodes.BAD_REQUEST]: jsonApiErrorContent('Bad request'),
         [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('Unauthorized'),
+        [HttpStatusCodes.FORBIDDEN]: jsonApiErrorContent('Forbidden'),
+        [HttpStatusCodes.NOT_FOUND]: jsonApiErrorContent('Not found'),
+        [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('Internal server error'),
     },
 });
 
@@ -48,7 +52,11 @@ export const getVouchHistory = createRoute({
              })),
             'History of handled vouches'
         ),
+        [HttpStatusCodes.BAD_REQUEST]: jsonApiErrorContent('Bad request'),
         [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('Unauthorized'),
+        [HttpStatusCodes.FORBIDDEN]: jsonApiErrorContent('Forbidden'),
+        [HttpStatusCodes.NOT_FOUND]: jsonApiErrorContent('Not found'),
+        [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('Internal server error'),
     },
 });
 
@@ -68,8 +76,11 @@ export const approveVouch = createRoute({
             z.object({ success: z.boolean() }),
             'Vouch approved successfully'
         ),
+        [HttpStatusCodes.BAD_REQUEST]: jsonApiErrorContent('Already processed or Bad request'),
+        [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('Unauthorized'),
+        [HttpStatusCodes.FORBIDDEN]: jsonApiErrorContent('Forbidden'),
         [HttpStatusCodes.NOT_FOUND]: jsonApiErrorContent('Vouch request not found'),
-        [HttpStatusCodes.BAD_REQUEST]: jsonApiErrorContent('Already processed'),
+        [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('Internal server error'),
     },
 });
 
@@ -89,8 +100,11 @@ export const declineVouch = createRoute({
             z.object({ success: z.boolean() }),
             'Vouch declined successfully'
         ),
+        [HttpStatusCodes.BAD_REQUEST]: jsonApiErrorContent('Already processed or Bad request'),
+        [HttpStatusCodes.UNAUTHORIZED]: jsonApiErrorContent('Unauthorized'),
+        [HttpStatusCodes.FORBIDDEN]: jsonApiErrorContent('Forbidden'),
         [HttpStatusCodes.NOT_FOUND]: jsonApiErrorContent('Vouch request not found'),
-        [HttpStatusCodes.BAD_REQUEST]: jsonApiErrorContent('Already processed'),
+        [HttpStatusCodes.INTERNAL_SERVER_ERROR]: jsonApiErrorContent('Internal server error'),
     },
 });
 

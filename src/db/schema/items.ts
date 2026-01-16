@@ -21,6 +21,7 @@ export const items = pgTable('items', {
     serialOrImei: varchar('serial_or_imei', { length: 50 }),
     estimatedWeightLb: decimal('estimated_weight_lb', { precision: 8, scale: 2 }).default('0'),
     clientShippingUsd: decimal('client_shipping_usd', { precision: 10, scale: 2 }).default('0'),
+    status: itemStatusEnum('status').default('PENDING').notNull(),
     ...timestamps(),
 });
 

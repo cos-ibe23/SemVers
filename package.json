@@ -6,10 +6,12 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsup src/index.ts --format esm --clean",
+    "build": "tsup src/index.ts src/db/migrate.ts --format esm --clean",
     "start": "node dist/index.js",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:migrate:dev": "node dist/db/migrate.js",
+    "db:migrate:prod": "node dist/db/migrate.js",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:better-auth:generate": "npx @better-auth/cli@latest generate --config src/db/auth.ts --output src/db/schema/auth.ts",

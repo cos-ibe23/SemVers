@@ -1,0 +1,50 @@
+name: Set up context
+description: Create a consistent context for follow-up jobs
+
+inputs:
+  docker_repository:
+    description: The path where the image should be pushed, without the tag. Eg. ghcr.io/imbod/imbod-backend
+    required: true
+
+outputs:
+  docker_image_latest_tag:
+    description: The full path where the image should be pushed including the "latest" tag
+    value: ${{ steps.vars.outputs.docker_image_latest_tag }}
+  docker_image_git_tag:
+    description: The full path where the image should be pushed including the 7 char git commit SHA as tag
+    value: ${{ steps.vars.outputs.docker_image_git_tag }}
+  git_commit_sha:
+    description: The 7 char git commit SHA
+    value: ${{ steps.vars.outputs.git_commit_sha }}
+  pr_number:
+    description: The PR number, or 0 if this workflow was triggered by another event
+    value: ${{ steps.vars.outputs.pr_number }}
+  docker_repository:
+    description: Same value as the input, so that you only have to define it once in a workflow.
+    value: ${{ steps.vars.outputs.docker_repository }}
+
+runs:
+  using: composite
+  steps:
+    - id: vars
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # Default values
+        GIT_COMMIT_SHA="$GITHUB_SHA"
+        PR_NUMBER=0
+
+        # If this is a PR, extract values from event payload
+        if [[ "$GITHUB_EVENT_NAME" == "pull_request" ]]; then
+          GIT_COMMIT_SHA=$(jq -r .pull_request.head.sha "$GITHUB_EVENT_PATH")
+          PR_NUMBER=$(jq -r .number "$GITHUB_EVENT_PATH")
+        fi
+
+        SHORT_SHA="${GIT_COMMIT_SHA:0:7}"
+
+        echo "docker_repository=${{ inputs.docker_repository }}" >> "$GITHUB_OUTPUT"
+        echo "docker_image_latest_tag=${{ inputs.docker_repository }}:latest" >> "$GITHUB_OUTPUT"
+        echo "git_commit_sha=$SHORT_SHA" >> "$GITHUB_OUTPUT"
+        echo "docker_image_git_tag=${{ inputs.docker_repository }}:$SHORT_SHA" >> "$GITHUB_OUTPUT"
+        echo "pr_number=$PR_NUMBER" >> "$GITHUB_OUTPUT"

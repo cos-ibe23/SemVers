@@ -1,0 +1,25 @@
+name: "Setup Docker"
+description: >
+  This action will:
+  1. Setup Docker Buildx, to easily build, cache and push container images
+  2. Authorize Docker, to allow Docker to push to GitHub Container Registry
+
+inputs:
+  github_token:
+    description: 'GitHub token for login'
+    required: true
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to GitHub Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ inputs.github_token }}
+

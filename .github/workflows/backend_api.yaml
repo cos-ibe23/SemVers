@@ -27,7 +27,7 @@ jobs:
       docker_repository: ${{ steps.vars.outputs.docker_repository }}
 
   build-test:
-    name: Build and Test
+    name: Build and Push
     runs-on: ubuntu-latest
     needs: [ctx]
     steps:

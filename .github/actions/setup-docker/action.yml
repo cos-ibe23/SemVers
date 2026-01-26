@@ -9,7 +9,6 @@ inputs:
     description: 'GitHub token for login'
     required: true
 
-
 runs:
   using: "composite"
   steps:

@@ -1,0 +1,61 @@
+name: CI - Backend (Build RC)
+
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - services/backend/**
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: your-org-or-username
+  SERVICE_NAME: backend
+  SERVICE_PATH: services/backend
+  IMAGE_NAME: sample-backend
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calculate version
+        id: semver
+        uses: ./.github/actions/semver-service
+        with:
+          service_name: ${{ env.SERVICE_NAME }}
+          service_path: ${{ env.SERVICE_PATH }}
+          tag_prefix: ${{ env.SERVICE_NAME }}-v
+
+      - name: Skip if no changes for service
+        if: steps.semver.outputs.bump_type == 'none'
+        run: |
+          echo "No changes for $SERVICE_NAME. Skipping build."
+          exit 0
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push RC image
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ env.SERVICE_PATH }}
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.IMAGE_NAME }}:${{ steps.semver.outputs.rc_tag }}
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.repository }}

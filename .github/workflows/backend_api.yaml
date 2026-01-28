@@ -51,7 +51,7 @@ jobs:
           cache-from: |
             type=registry,ref=${{ needs.ctx.outputs.docker_image_latest_tag }}
           cache-to: type=inline
-          context: ./backend
+          context: ./services/backend
           platforms: linux/amd64
           push: true
           tags: ${{ needs.ctx.outputs.docker_image_git_tag }},${{ needs.ctx.outputs.docker_image_latest_tag }}

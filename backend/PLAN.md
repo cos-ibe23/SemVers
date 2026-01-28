@@ -1,6 +1,7 @@
 # Listing App Feature Roadmap & Ideas
 
 ## Understanding: Box vs Shipment
+
 - **Box** = Physical container (the actual package being shipped)
 - **Shipment** = Logistics/tracking wrapper (shipping transaction, carrier info, tracking)
 - Current code uses "Shipment" for what should be "Box" - needs terminology cleanup
@@ -12,6 +13,7 @@
 ### 🔴 HIGH PRIORITY - Reduce Clicks & Automate
 
 #### 1. Consumer Pickup Request Link (not Publicly accessible, user requires initial vouch)
+
 **Problem:** Shippers manually create pickups from WhatsApp messages
 **Solution:** Shareable link where consumers submit pickup requests
 
@@ -26,6 +28,7 @@
 
 
 #### 2. Smart Pickup Updates (Post-Purchase Reconciliation)
+
 **Problem:** Shipper needs to update pickup after actually buying items
 **Solution:** Streamlined "Reconcile Pickup" flow
 
@@ -38,6 +41,7 @@
 - Calculate variance from original quote
 
 #### 3. View All Pickup Request Page
+
 **Problem:** Home only shows last 5 pickups
 **Solution:** Full pickup request list with filters
 

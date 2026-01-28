@@ -1,16 +1,13 @@
 # Dependencies
 node_modules/
 
-# Next.js
-.next/
-out/
+# Nuxt build output
+.nuxt/
+.output/
+dist/
 
-# Env files (NEVER COMMIT THESE)
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Nitro / server build
+.server/
 
 # Logs
 npm-debug.log*
@@ -19,33 +16,22 @@ yarn-error.log*
 pnpm-debug.log*
 *.log
 
-# OS / Editor
+# Env files (secrets)
+.env
+.env.*
+!.env.example
+
+# OS / Editor junk
 .DS_Store
 Thumbs.db
+
+# IDEs
 .vscode/
 .idea/
 
-# Build / Cache
-.turbo/
+# Cache
 .cache/
-dist/
-build/
+.tmp/
 
-# Docker
-*.tar
-docker-compose.override.yml
-
-# Coverage
+# Tests
 coverage/
-
-# Misc
-*.swp
-*.swo
-*.tmp
-
-# Certificates / Secrets
-*.pem
-*.key
-secrets/
-.github/.DS_Store
-.github/.DS_Store

@@ -2,14 +2,14 @@ name: Builds and pushes Backend API Docker image
 on:
   pull_request:
     paths:
-      - 'backend/**'
-      - '.github/workflows/backend_api.yaml'
+      - 'services/api/**'
+      - '.github/workflows/api.yaml'
   push:
     branches:
       - main
     paths:
-      - 'backend/**'
-      - '.github/workflows/backend_api.yaml'
+      - 'services/api/**'
+      - '.github/workflows/api.yaml'
 
 permissions:
   contents: read
@@ -51,7 +51,7 @@ jobs:
           cache-from: |
             type=registry,ref=${{ needs.ctx.outputs.docker_image_latest_tag }}
           cache-to: type=inline
-          context: ./services/backend
+          context: ./services/api
           platforms: linux/amd64
           push: true
           tags: ${{ needs.ctx.outputs.docker_image_git_tag }},${{ needs.ctx.outputs.docker_image_latest_tag }}

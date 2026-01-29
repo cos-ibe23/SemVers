@@ -4,13 +4,13 @@ on:
   pull_request:
     paths:
       - 'services/api/**'
-      - '.github/workflows/ci-backend.yml'
+      - '.github/workflows/ci-api.yml'
   push:
     branches:
       - main
     paths:
       - 'services/api/**'
-      - '.github/workflows/ci-backend.yml'
+      - '.github/workflows/ci-api.yml'
 
 permissions:
   contents: read
@@ -22,7 +22,7 @@ env:
   OWNER: imbod
   SERVICE_NAME: api
   SERVICE_PATH: services/api
-  IMAGE_NAME: sample-api
+  IMAGE_NAME: imbod-backend
 
 jobs:
   build:
@@ -45,14 +45,15 @@ jobs:
         if: steps.semver.outputs.bump_type == 'none'
         run: |
           echo "No changes for $SERVICE_NAME. Skipping build."
-          exit 0
 
       - name: Log in to Container Registry
+        if: steps.semver.outputs.bump_type != 'none'
         uses: ./.github/actions/setup-docker
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push RC image
+        if: steps.semver.outputs.bump_type != 'none'
         uses: docker/build-push-action@v6
         with:
           context: ${{ env.SERVICE_PATH }}

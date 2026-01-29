@@ -11,7 +11,7 @@ on:
           - frontend
           - receipt
       rc_tag:
-        description: "RC tag (e.g. api-v0.2.0-rc.17)"
+        description: "RC tag (e.g. v0.2.0-rc.17)"
         required: true
 
 env:

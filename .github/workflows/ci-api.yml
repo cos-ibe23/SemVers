@@ -4,12 +4,14 @@ on:
   pull_request:
     paths:
       - 'services/api/**'
+      - 'libs/**'
       - '.github/workflows/ci-api.yml'
   push:
     branches:
       - main
     paths:
       - 'services/api/**'
+      - 'libs/**'
       - '.github/workflows/ci-api.yml'
 
 permissions:
@@ -40,7 +42,7 @@ jobs:
           service_name: ${{ env.SERVICE_NAME }}
           service_path: ${{ env.SERVICE_PATH }}
           tag_prefix: ${{ env.SERVICE_NAME }}-v
-          additional_watch_paths: .github/workflows/ci-api.yml .github/actions/semver-service
+          additional_watch_paths: libs .github/workflows/ci-api.yml .github/actions/semver-service
 
       - name: Skip if no changes for service
         if: steps.semver.outputs.bump_type == 'none'
@@ -61,7 +63,7 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: |
-            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.IMAGE_NAME }}:${{ steps.semver.outputs.rc_tag }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.IMAGE_NAME }}:${{ steps.semver.outputs.image_tag }}
           build-args: |
             GIT_SHA=${{ github.sha }}
           labels: |

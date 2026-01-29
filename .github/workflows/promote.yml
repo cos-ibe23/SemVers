@@ -1,0 +1,78 @@
+name: Promote Service
+
+on:
+  workflow_dispatch:
+    inputs:
+      service:
+        required: true
+        type: choice
+        options:
+          - api
+          - frontend
+          - receipt
+      rc_tag:
+        description: "RC tag (e.g. api-v0.2.0-rc.17)"
+        required: true
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: imbod
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install crane + jq
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq
+          curl -sL https://github.com/google/go-containerregistry/releases/latest/download/go-containerregistry_Linux_x86_64.tar.gz | tar -xz
+          sudo mv crane /usr/local/bin/
+
+      - name: Login to GHCR
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | crane auth login ghcr.io \
+            -u ${{ github.actor }} \
+            --password-stdin
+
+      - name: Verify RC exists
+        run: |
+          IMAGE="$REGISTRY/$OWNER/imbod-${{ inputs.service }}:${{ inputs.rc_tag }}"
+          crane digest "$IMAGE" > /dev/null
+
+      - name: Promote by digest
+        id: promote
+        run: |
+          IMAGE="$REGISTRY/$OWNER/imbod-${{ inputs.service }}:${{ inputs.rc_tag }}"
+
+          DIGEST=$(crane digest "$IMAGE")
+
+          STABLE="${{ inputs.rc_tag%-rc.* }}"
+
+          echo "Promoting:"
+          echo "  RC:     $IMAGE"
+          echo "  Stable: $STABLE"
+          echo "  Digest: $DIGEST"
+
+          crane copy \
+            "$IMAGE@$DIGEST" \
+            "$REGISTRY/$OWNER/imbod-${{ inputs.service }}:$STABLE"
+
+          echo "stable_tag=$STABLE" >> $GITHUB_OUTPUT
+
+      - name: Tag source commit (optional but recommended)
+        run: |
+          IMAGE="$REGISTRY/$OWNER/imbod-${{ inputs.service }}:${{ inputs.rc_tag }}"
+          DIGEST=$(crane digest "$IMAGE")
+
+          COMMIT=$(crane config "$IMAGE@$DIGEST" \
+            | jq -r '.config.Labels["org.opencontainers.image.revision"]')
+
+          git fetch --tags
+          git tag -f "${{ steps.promote.outputs.stable_tag }}" "$COMMIT"
+          git push origin "${{ steps.promote.outputs.stable_tag }}"

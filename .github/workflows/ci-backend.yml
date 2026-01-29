@@ -1,4 +1,4 @@
-name: CI - API (Build RC)
+name: CI - API (Build RC) 
 
 on:
   pull_request:

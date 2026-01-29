@@ -1,21 +1,28 @@
-name: CI - Backend (Build RC)
+name: CI - API (Build RC)
 
-# on:
-#   push:
-#     branches: [main]
-#     paths:
-#       - services/backend/**
+on:
+  pull_request:
+    paths:
+      - 'services/api/**'
+      - '.github/workflows/api.yaml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'services/api/**'
+      - '.github/workflows/api.yaml'
 
 permissions:
   contents: read
   packages: write
+  id-token: write
 
 env:
   REGISTRY: ghcr.io
-  OWNER: your-org-or-username
-  SERVICE_NAME: backend
-  SERVICE_PATH: services/backend
-  IMAGE_NAME: sample-backend
+  OWNER: imbod
+  SERVICE_NAME: api
+  SERVICE_PATH: services/api
+  IMAGE_NAME: sample-api
 
 jobs:
   build:
@@ -40,18 +47,17 @@ jobs:
           echo "No changes for $SERVICE_NAME. Skipping build."
           exit 0
 
-      - name: Login to GHCR
-        uses: docker/login-action@v3
+      - name: Log in to Container Registry
+        uses: ./.github/actions/setup-docker
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push RC image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           context: ${{ env.SERVICE_PATH }}
           push: true
+          platforms: linux/amd64
           tags: |
             ${{ env.REGISTRY }}/${{ env.OWNER }}/${{ env.IMAGE_NAME }}:${{ steps.semver.outputs.rc_tag }}
           build-args: |

@@ -14,12 +14,6 @@ on:
         description: "RC tag (e.g. v0.2.0-rc.17)"
         required: true
 
-permissions:
-  contents: write
-  packages: write
-
-
-
 env:
   REGISTRY: ghcr.io
   OWNER: imbod
@@ -83,4 +77,6 @@ jobs:
 
           git fetch --tags
           git tag -f "${{ steps.promote.outputs.stable_tag }}" "$COMMIT"
-          git push origin "${{ steps.promote.outputs.stable_tag }}"
+          git push https://x-access-token:${{ secrets.PROMOTION_PAT }}@github.com/Imbod/apps.git \
+            "${{ steps.promote.outputs.stable_tag }}"
+

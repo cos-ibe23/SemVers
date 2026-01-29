@@ -41,7 +41,7 @@ jobs:
         with:
           service_name: ${{ env.SERVICE_NAME }}
           service_path: ${{ env.SERVICE_PATH }}
-          tag_prefix: ${{ env.SERVICE_NAME }}-v
+          tag_prefix: v
           additional_watch_paths: libs .github/workflows/ci-api.yml .github/actions/semver-service
 
       - name: Skip if no changes for service

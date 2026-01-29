@@ -1,18 +1,18 @@
-name: CI - API (Build RC)
+name: CI - Backend (Build RC)
 
 on:
   pull_request:
     paths:
-      - 'services/api/**'
+      - 'services/backend/**'
       - 'libs/**'
-      - '.github/workflows/ci-api.yml'
+      - '.github/workflows/ci-backend.yml'
   push:
     branches:
       - main
     paths:
-      - 'services/api/**'
+      - 'services/backend/**'
       - 'libs/**'
-      - '.github/workflows/ci-api.yml'
+      - '.github/workflows/ci-backend.yml'
 
 permissions:
   contents: read
@@ -22,9 +22,9 @@ permissions:
 env:
   REGISTRY: ghcr.io
   OWNER: imbod
-  SERVICE_NAME: api
-  SERVICE_PATH: services/api
-  IMAGE_NAME: imbod-api
+  SERVICE_NAME: backend
+  SERVICE_PATH: services/backend
+  IMAGE_NAME: imbod-backend
 
 jobs:
   build:
@@ -42,7 +42,7 @@ jobs:
           service_name: ${{ env.SERVICE_NAME }}
           service_path: ${{ env.SERVICE_PATH }}
           tag_prefix: v
-          additional_watch_paths: libs .github/workflows/ci-api.yml .github/actions/semver-service
+          additional_watch_paths: libs .github/workflows/ci-backend.yml .github/actions/semver-service
 
       - name: Skip if no changes for service
         if: steps.semver.outputs.bump_type == 'none'

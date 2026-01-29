@@ -51,7 +51,10 @@ jobs:
 
           DIGEST=$(crane digest "$IMAGE")
 
-          STABLE="${{ inputs.rc_tag%-rc.* }}"
+
+          # Use shell variable for string manipulation
+          RC_TAG="${{ inputs.rc_tag }}"
+          STABLE="${RC_TAG%-rc.*}"
 
           echo "Promoting:"
           echo "  RC:     $IMAGE"

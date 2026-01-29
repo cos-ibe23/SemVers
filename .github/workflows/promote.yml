@@ -7,7 +7,7 @@ on:
         required: true
         type: choice
         options:
-          - api
+          - backend
           - frontend
           - receipt
       rc_tag:

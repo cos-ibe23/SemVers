@@ -11,6 +11,10 @@ inputs:
   tag_prefix:
     description: "Tag prefix (e.g. backend-v)"
     required: true
+  additional_watch_paths:
+    description: "Space-separated list of additional paths to watch for changes (triggers patch bump)"
+    required: false
+    default: ""
 
 outputs:
   bump_type:
@@ -39,6 +43,8 @@ runs:
         echo "Service: $SERVICE_NAME"
         echo "Path:    $SERVICE_PATH"
         echo "Prefix: $TAG_PREFIX"
+        echo "Event: ${GITHUB_EVENT_NAME:-unknown}"
+        echo "Base SHA: ${GITHUB_BASE_SHA:-none}"
 
         # Ensure we have full history and tags
         git fetch --tags --prune
@@ -62,8 +68,13 @@ runs:
         BUMP="none"
 
         # Determine correct range for push vs PR
-        if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
-          RANGE="${GITHUB_BASE_SHA}..${GITHUB_SHA}"
+        if [ "${GITHUB_EVENT_NAME}" = "pull_request" ] || [ -n "${GITHUB_BASE_SHA:-}" ]; then
+          if [ -n "${GITHUB_BASE_SHA:-}" ]; then
+             RANGE="${GITHUB_BASE_SHA}..${GITHUB_SHA}"
+          else
+             # Fallback which shouldn't happen for PRs essentially
+             RANGE="HEAD~1..HEAD" 
+          fi
         else
           if [ -z "$RANGE" ]; then
             RANGE="HEAD~50..HEAD"
@@ -78,6 +89,18 @@ runs:
           FILES=$(git diff-tree --no-commit-id --name-only -r "$COMMIT" || true)
 
           if echo "$FILES" | grep -q "^$SERVICE_PATH/"; then
+            MATCHED_SERVICE=true
+          elif [ -n "${{ inputs.additional_watch_paths }}" ]; then
+             # Check additional paths
+             for path in ${{ inputs.additional_watch_paths }}; do
+               if echo "$FILES" | grep -q "^$path"; then
+                 MATCHED_SERVICE=true
+                 break
+               fi
+             done
+          fi
+
+          if [ "${MATCHED_SERVICE:-false}" = "true" ]; then
             MSG=$(git log -1 --pretty=%B "$COMMIT")
 
             if echo "$MSG" | grep -q "BREAKING CHANGE"; then

@@ -40,6 +40,7 @@ jobs:
           service_name: ${{ env.SERVICE_NAME }}
           service_path: ${{ env.SERVICE_PATH }}
           tag_prefix: ${{ env.SERVICE_NAME }}-v
+          additional_watch_paths: .github/workflows/ci-api.yml .github/actions/semver-service
 
       - name: Skip if no changes for service
         if: steps.semver.outputs.bump_type == 'none'

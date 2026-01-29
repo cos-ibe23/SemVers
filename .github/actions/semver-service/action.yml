@@ -36,29 +36,40 @@ runs:
         SERVICE_PATH="${{ inputs.service_path }}"
         TAG_PREFIX="${{ inputs.tag_prefix }}"
 
-        git fetch --tags
+        echo "Service: $SERVICE_NAME"
+        echo "Path:    $SERVICE_PATH"
+        echo "Prefix: $TAG_PREFIX"
+
+        # Ensure we have full history and tags
+        git fetch --tags --prune
 
         # -----------------------------
         # Find last service tag
         # -----------------------------
-        LAST_TAG=$(git tag --list "${TAG_PREFIX}*" | sort -V | tail -n 1)
+        LAST_TAG=$(git tag --list "${TAG_PREFIX}*" | sort -V | tail -n 1 || true)
+
         if [ -z "$LAST_TAG" ]; then
-          LAST_TAG="${TAG_PREFIX}0.0.0"
+          echo "No previous tag found. Scanning all commits."
+          RANGE=""
+        else
+          echo "Last tag: $LAST_TAG"
+          RANGE="$LAST_TAG..HEAD"
         fi
-
-        echo "Last tag: $LAST_TAG"
-
-        RANGE="$LAST_TAG..HEAD"
 
         # -----------------------------
         # Determine bump type per service
         # -----------------------------
         BUMP="none"
 
-        COMMITS=$(git rev-list $RANGE)
+        if [ -z "$RANGE" ]; then
+          COMMITS=$(git rev-list HEAD)
+        else
+          COMMITS=$(git rev-list "$RANGE")
+        fi
 
         for COMMIT in $COMMITS; do
-          FILES=$(git diff-tree --no-commit-id --name-only -r "$COMMIT")
+          # Use git show so merge commits are handled correctly
+          FILES=$(git show --pretty="" --name-only "$COMMIT" || true)
 
           if echo "$FILES" | grep -q "^$SERVICE_PATH/"; then
             MSG=$(git log -1 --pretty=%B "$COMMIT")
@@ -89,11 +100,16 @@ runs:
         # -----------------------------
         # Calculate next version
         # -----------------------------
-        VERSION="${LAST_TAG#${TAG_PREFIX}}"
-
-        MAJOR=$(echo "$VERSION" | cut -d. -f1)
-        MINOR=$(echo "$VERSION" | cut -d. -f2)
-        PATCH=$(echo "$VERSION" | cut -d. -f3)
+        if [ -z "$LAST_TAG" ]; then
+          MAJOR=0
+          MINOR=0
+          PATCH=0
+        else
+          VERSION="${LAST_TAG#${TAG_PREFIX}}"
+          MAJOR=$(echo "$VERSION" | cut -d. -f1)
+          MINOR=$(echo "$VERSION" | cut -d. -f2)
+          PATCH=$(echo "$VERSION" | cut -d. -f3)
+        fi
 
         case "$BUMP" in
           major)

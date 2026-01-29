@@ -18,6 +18,9 @@ env:
   REGISTRY: ghcr.io
   OWNER: imbod
 
+permissions:
+  contents: read
+  packages: write
 jobs:
   promote:
     runs-on: ubuntu-latest
@@ -66,6 +69,17 @@ jobs:
             "$REGISTRY/$OWNER/imbod-${{ inputs.service }}:$STABLE"
 
           echo "stable_tag=$STABLE" >> $GITHUB_OUTPUT
+    
+      - name: Configure git auth (force PAT)
+        run: |
+          git config --global user.email "release-bot@imbod.local"
+          git config --global user.name "Imbod Release Bot"
+
+          git remote set-url origin \
+            https://x-access-token:${{ secrets.PROMOTION_PAT }}@github.com/Imbod/apps.git
+
+          echo "Remote set to:"
+          git remote -v
 
       - name: Tag source commit (optional but recommended)
         run: |
@@ -75,8 +89,8 @@ jobs:
           COMMIT=$(crane config "$IMAGE@$DIGEST" \
             | jq -r '.config.Labels["org.opencontainers.image.revision"]')
 
+          echo "Tagging commit: $COMMIT"
+
           git fetch --tags
           git tag -f "${{ steps.promote.outputs.stable_tag }}" "$COMMIT"
-          git push https://x-access-token:${{ secrets.PROMOTION_PAT }}@github.com/Imbod/apps.git \
-            "${{ steps.promote.outputs.stable_tag }}"
-
+          git push origin "${{ steps.promote.outputs.stable_tag }}"

@@ -1,16 +1,16 @@
-name: CI - API (Build RC) 
+name: CI - API (Build RC)
 
 on:
   pull_request:
     paths:
       - 'services/api/**'
-      - '.github/workflows/api.yaml'
+      - '.github/workflows/ci-backend.yml'
   push:
     branches:
       - main
     paths:
       - 'services/api/**'
-      - '.github/workflows/api.yaml'
+      - '.github/workflows/ci-backend.yml'
 
 permissions:
   contents: read

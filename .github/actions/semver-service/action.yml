@@ -61,15 +61,21 @@ runs:
         # -----------------------------
         BUMP="none"
 
-        if [ -z "$RANGE" ]; then
-          COMMITS=$(git rev-list HEAD)
+        # Determine correct range for push vs PR
+        if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
+          RANGE="${GITHUB_BASE_SHA}..${GITHUB_SHA}"
         else
-          COMMITS=$(git rev-list "$RANGE")
+          if [ -z "$RANGE" ]; then
+            RANGE="HEAD~50..HEAD"
+          fi
         fi
+
+        echo "Using range: $RANGE"
+        COMMITS=$(git rev-list $RANGE)
 
         for COMMIT in $COMMITS; do
           # Use git show so merge commits are handled correctly
-          FILES=$(git show --pretty="" --name-only "$COMMIT" || true)
+          FILES=$(git diff-tree --no-commit-id --name-only -r "$COMMIT" || true)
 
           if echo "$FILES" | grep -q "^$SERVICE_PATH/"; then
             MSG=$(git log -1 --pretty=%B "$COMMIT")

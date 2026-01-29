@@ -34,11 +34,10 @@ jobs:
           curl -sL https://github.com/google/go-containerregistry/releases/latest/download/go-containerregistry_Linux_x86_64.tar.gz | tar -xz
           sudo mv crane /usr/local/bin/
 
-      - name: Login to GHCR
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | crane auth login ghcr.io \
-            -u ${{ github.actor }} \
-            --password-stdin
+      - name: Log in to Container Registry
+        uses: ./.github/actions/setup-docker
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Verify RC exists
         run: |

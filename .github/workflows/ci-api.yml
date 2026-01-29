@@ -24,7 +24,7 @@ env:
   OWNER: imbod
   SERVICE_NAME: api
   SERVICE_PATH: services/api
-  IMAGE_NAME: imbod-backend
+  IMAGE_NAME: imbod-api
 
 jobs:
   build:

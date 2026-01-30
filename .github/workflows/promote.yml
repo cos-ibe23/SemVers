@@ -29,6 +29,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Install crane + jq
         run: |
@@ -70,9 +71,9 @@ jobs:
 
           echo "stable_tag=$STABLE" >> $GITHUB_OUTPUT
 
-      - name: Sanity check git auth
+      - name: Clear GitHub App auth header
         run: |
-            git ls-remote origin
+            git config --global --unset-all http.https://github.com/.extraheader || true
 
     
       - name: Configure git auth (force PAT)

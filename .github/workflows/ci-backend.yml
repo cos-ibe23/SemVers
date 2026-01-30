@@ -4,14 +4,12 @@ on:
   pull_request:
     paths:
       - 'services/backend/**'
-      - 'libs/**'
       - '.github/workflows/ci-backend.yml'
   push:
     branches:
       - main
     paths:
       - 'services/backend/**'
-      - 'libs/**'
       - '.github/workflows/ci-backend.yml'
 
 permissions:

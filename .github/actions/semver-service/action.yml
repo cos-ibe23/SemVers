@@ -52,7 +52,7 @@ runs:
         # -----------------------------
         if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
           SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c1-7)
-          TAG="${SERVICE_NAME}-${SHORT_SHA}"
+          TAG="${SHORT_SHA}"
 
           echo "PR mode detected. Tag: $TAG"
           echo "bump=pr" >> "$GITHUB_OUTPUT"

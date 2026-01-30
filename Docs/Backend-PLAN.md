@@ -52,6 +52,7 @@
 - Pickup request clear after 7 days ( on the admin side make it editble)
 
 #### 4. View All Pickups Page
+
 **Problem:** Home only shows last 5 pickups
 **Solution:** Full pickups list with filters
 
@@ -61,6 +62,7 @@
 - Export to CSV
 
 #### 5. Vouch
+
 **Problem:** User needs to feel like the platform is for them only (gate keeping)
 **Solution:** Introduce Vouches
 
@@ -195,6 +197,8 @@ Only allow "SOLD" marking after HANDED_OFF state.
 - Photo capture of items
 - Offline pickup creation (sync later)
 
+
+#### 17. Virtual reality app.
 ---
 
 ## Recommended Implementation Order

@@ -19,7 +19,7 @@ env:
   OWNER: imbod
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 jobs:
   promote:
@@ -70,17 +70,6 @@ jobs:
 
           echo "stable_tag=$STABLE" >> $GITHUB_OUTPUT
     
-      - name: Configure git auth (force PAT)
-        run: |
-          git config --global user.email "release-bot@imbod.local"
-          git config --global user.name "Imbod Release Bot"
-
-          git remote set-url origin \
-            https://x-access-token:${{ secrets.PROMOTION_PAT }}@github.com/Imbod/apps.git
-
-          echo "Remote set to:"
-          git remote -v
-
       - name: Tag source commit (optional but recommended)
         run: |
           IMAGE="$REGISTRY/$OWNER/imbod-${{ inputs.service }}:${{ inputs.rc_tag }}"
@@ -90,6 +79,9 @@ jobs:
             | jq -r '.config.Labels["org.opencontainers.image.revision"]')
 
           echo "Tagging commit: $COMMIT"
+
+          git config user.email "release-bot@imbod.local"
+          git config user.name "Imbod Release Bot"
 
           git fetch --tags
           git tag -f "${{ steps.promote.outputs.stable_tag }}" "$COMMIT"

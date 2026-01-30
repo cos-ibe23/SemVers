@@ -52,24 +52,22 @@ jobs:
         id: promote
         run: |
           IMAGE="$REGISTRY/$OWNER/imbod-${{ inputs.service }}:${{ inputs.rc_tag }}"
-
           DIGEST=$(crane digest "$IMAGE")
 
-
-          # Use shell variable for string manipulation
           RC_TAG="${{ inputs.rc_tag }}"
-          STABLE="${RC_TAG%-rc.*}"
+          REGISTRY_TAG="${RC_TAG%-rc.*}"
 
           echo "Promoting:"
           echo "  RC:     $IMAGE"
-          echo "  Stable: $STABLE"
+          echo "  Registry tag: $REGISTRY_TAG"
           echo "  Digest: $DIGEST"
 
           crane copy \
             "$IMAGE@$DIGEST" \
-            "$REGISTRY/$OWNER/imbod-${{ inputs.service }}:$STABLE"
+            "$REGISTRY/$OWNER/imbod-${{ inputs.service }}:$REGISTRY_TAG"
 
-          echo "stable_tag=$STABLE" >> $GITHUB_OUTPUT
+          echo "registry_tag=$REGISTRY_TAG" >> $GITHUB_OUTPUT
+
 
       - name: Clear GitHub App auth header
         run: |
@@ -87,7 +85,7 @@ jobs:
           echo "Remote set to:"
           git remote -v
     
-      - name: Tag source commit (optional but recommended)
+      - name: Tag source commit
         run: |
           IMAGE="$REGISTRY/$OWNER/imbod-${{ inputs.service }}:${{ inputs.rc_tag }}"
           DIGEST=$(crane digest "$IMAGE")
@@ -95,8 +93,12 @@ jobs:
           COMMIT=$(crane config "$IMAGE@$DIGEST" \
             | jq -r '.config.Labels["org.opencontainers.image.revision"]')
 
+          REGISTRY_TAG="${{ steps.promote.outputs.registry_tag }}"
+          GIT_TAG="${{ inputs.service }}-${REGISTRY_TAG}"
+
           echo "Tagging commit: $COMMIT"
+          echo "Git tag: $GIT_TAG"
 
           git fetch --tags
-          git tag -f "${{ steps.promote.outputs.stable_tag }}" "$COMMIT"
-          git push origin "${{ steps.promote.outputs.stable_tag }}"
+          git tag -f "$GIT_TAG" "$COMMIT"
+          git push origin "$GIT_TAG"

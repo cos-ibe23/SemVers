@@ -69,6 +69,11 @@ jobs:
             "$REGISTRY/$OWNER/imbod-${{ inputs.service }}:$STABLE"
 
           echo "stable_tag=$STABLE" >> $GITHUB_OUTPUT
+
+      - name: Sanity check git auth
+        run: |
+            git ls-remote origin
+
     
       - name: Configure git auth (force PAT)
         run: |

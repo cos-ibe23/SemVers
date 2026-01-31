@@ -21,6 +21,12 @@ env:
 permissions:
   contents: read
   packages: write
+
+# Only allow one promotion per service at a time
+concurrency:
+  group: promote-${{ inputs.service }}
+  cancel-in-progress: false
+
 jobs:
   promote:
     runs-on: ubuntu-latest
@@ -46,7 +52,15 @@ jobs:
       - name: Verify RC exists
         run: |
           IMAGE="$REGISTRY/$OWNER/imbod-${{ inputs.service }}:${{ inputs.rc_tag }}"
+          echo "Checking RC image: $IMAGE"
           crane digest "$IMAGE" > /dev/null
+
+      - name: Validate RC tag format
+        run: |
+          if [[ "${{ inputs.rc_tag }}" != v*-rc.* ]]; then
+            echo "RC tag must look like: vX.Y.Z-rc.N"
+            exit 1
+          fi
 
       - name: Promote by digest
         id: promote
@@ -58,9 +72,9 @@ jobs:
           REGISTRY_TAG="${RC_TAG%-rc.*}"
 
           echo "Promoting:"
-          echo "  RC:     $IMAGE"
-          echo "  Registry tag: $REGISTRY_TAG"
-          echo "  Digest: $DIGEST"
+          echo "  RC:           $IMAGE"
+          echo "  Stable tag:  $REGISTRY_TAG"
+          echo "  Digest:      $DIGEST"
 
           crane copy \
             "$IMAGE@$DIGEST" \
@@ -68,12 +82,6 @@ jobs:
 
           echo "registry_tag=$REGISTRY_TAG" >> $GITHUB_OUTPUT
 
-
-      - name: Clear GitHub App auth header
-        run: |
-            git config --global --unset-all http.https://github.com/.extraheader || true
-
-    
       - name: Configure git auth (force PAT)
         run: |
           git config --global user.email "release-bot@imbod.local"
@@ -84,21 +92,75 @@ jobs:
 
           echo "Remote set to:"
           git remote -v
-    
-      - name: Tag source commit
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.PROMOTION_PAT }}
         run: |
-          IMAGE="$REGISTRY/$OWNER/imbod-${{ inputs.service }}:${{ inputs.rc_tag }}"
+          SERVICE="${{ inputs.service }}"
+
+          IMAGE="$REGISTRY/$OWNER/imbod-$SERVICE:${{ inputs.rc_tag }}"
           DIGEST=$(crane digest "$IMAGE")
 
           COMMIT=$(crane config "$IMAGE@$DIGEST" \
             | jq -r '.config.Labels["org.opencontainers.image.revision"]')
 
           REGISTRY_TAG="${{ steps.promote.outputs.registry_tag }}"
-          GIT_TAG="${{ inputs.service }}-${REGISTRY_TAG}"
+          GIT_TAG="$SERVICE-$REGISTRY_TAG"
 
-          echo "Tagging commit: $COMMIT"
+          echo "Commit: $COMMIT"
           echo "Git tag: $GIT_TAG"
 
+          # -----------------------------
+          # Find Previous Service Tag
+          # -----------------------------
+          SEARCH_PREFIX="$SERVICE-v"
           git fetch --tags
-          git tag -f "$GIT_TAG" "$COMMIT"
-          git push origin "$GIT_TAG"
+
+          LAST_TAG=$(git tag --list "${SEARCH_PREFIX}*" \
+            | grep -v "$GIT_TAG" \
+            | sort -V \
+            | tail -n 1 || true)
+
+          if [ -z "$LAST_TAG" ]; then
+            echo "No previous tag found. Generating full history changelog."
+            LOG_RANGE=""
+          else
+            echo "Previous tag: $LAST_TAG"
+            LOG_RANGE="$LAST_TAG..$COMMIT"
+          fi
+
+          # -----------------------------
+          # Generate Changelog
+          # -----------------------------
+          FEATURES=$(git log $LOG_RANGE --pretty="%s" -- services/$SERVICE | grep '^feat:' || true)
+          FIXES=$(git log $LOG_RANGE --pretty="%s" -- services/$SERVICE | grep '^fix:' || true)
+          BREAKING=$(git log $LOG_RANGE --pretty="%s" -- services/$SERVICE | grep 'BREAKING CHANGE' || true)
+
+          {
+            echo "## $GIT_TAG"
+            echo ""
+            echo "**Image:** $REGISTRY/$OWNER/imbod-$SERVICE:$REGISTRY_TAG"
+            echo "**Digest:** $DIGEST"
+            echo "**Commit:** $COMMIT"
+            echo ""
+            echo "### 🚀 Features"
+            echo "$FEATURES"
+            echo ""
+            echo "### 🐛 Fixes"
+            echo "$FIXES"
+            echo ""
+            echo "### ⚠️ Breaking Changes"
+            echo "$BREAKING"
+          } > release_notes.md
+
+          echo "Release Notes:"
+          cat release_notes.md
+
+          # -----------------------------
+          # Create GitHub Release (creates tag)
+          # -----------------------------
+          gh release create "$GIT_TAG" \
+            --title "$GIT_TAG" \
+            --notes-file release_notes.md \
+            --target "main"

@@ -17,7 +17,7 @@ const links = [
 </script>
 
 <template>
-  <>
+
     <!-- Overlay for mobile -->
     <div 
       class="sidebar-overlay" 
@@ -49,5 +49,5 @@ const links = [
         </NuxtLink>
       </nav>
     </aside>
-  </>
+
 </template>

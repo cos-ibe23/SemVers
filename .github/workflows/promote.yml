@@ -144,13 +144,13 @@ jobs:
             echo "**Digest:** $DIGEST"
             echo "**Commit:** $COMMIT"
             echo ""
-            echo "### 🚀 Features"
+            echo "### Features"
             echo "$FEATURES"
             echo ""
-            echo "### 🐛 Fixes"
+            echo "### Fixes"
             echo "$FIXES"
             echo ""
-            echo "### ⚠️ Breaking Changes"
+            echo "### Breaking Changes"
             echo "$BREAKING"
           } > release_notes.md
 

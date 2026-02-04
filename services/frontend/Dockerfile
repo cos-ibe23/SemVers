@@ -15,24 +15,21 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Remove development dependencies
-RUN npm prune --production
-
 # Stage 2: Production
 FROM node:20-alpine
 
 WORKDIR /app
 
 # Copy output from builder
-COPY --from=builder /app/.output ./.output
-# Copy prune node_modules just in case, though Nuxt output is usually standalone or bundles what it needs
-# For Nuxt 3/4 nitro output, .output/server/index.mjs is the entry
-# But we might need public folder if not fully embedded
+COPY --from=builder --chown=node:node /app/.output ./.output
 
 # Set environment variables
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOST=0.0.0.0
+
+# Switch to non-root user
+USER node
 
 # Expose port
 EXPOSE 3000

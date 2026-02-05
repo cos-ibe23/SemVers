@@ -10,7 +10,12 @@ export default defineNuxtConfig({
 
   runtimeConfig: {
     public: {
-      apiBase: process.env.NUXT_PUBLIC_API_BASE || 'http://localhost:8080',
+      apiBase: process.env.NUXT_PUBLIC_API_BASE || '/v1',
     },
+    apiProxyTarget: process.env.NUXT_API_PROXY_TARGET || 'http://localhost:4000',
+  },
+
+  routeRules: {
+    '/v1/**': { proxy: process.env.NUXT_API_PROXY_TARGET ? `${process.env.NUXT_API_PROXY_TARGET}/**` : 'http://localhost:4000/v1/**' },
   },
 })

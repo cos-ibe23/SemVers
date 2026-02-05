@@ -33,4 +33,9 @@ router.openapi(healthRoute, (c) => {
     });
 });
 
+// Metrics endpoint (placeholder for Prometheus)
+router.get('/metrics', (c) => {
+    return c.text('OK');
+});
+
 export default router;

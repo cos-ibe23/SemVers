@@ -1,3 +1,4 @@
+import type { Next } from 'hono';
 import { createApp } from './lib/create-app';
 import { configureOpenAPI } from './lib/configure-open-api';
 import { auth } from './db/auth';
@@ -44,7 +45,7 @@ function addOriginHeader(request: Request, origin: string): Request {
 }
 
 // Mount Better Auth routes with Origin handling
-app.on(['POST', 'GET', 'PATCH'], '/v1/auth/*', async (c, next) => {
+app.on(['POST', 'GET', 'PATCH', 'OPTIONS'], '/v1/auth/*', async (c, next: Next) => {
     const path = c.req.path;
 
     // Skip custom routes - these are handled by the custom auth router

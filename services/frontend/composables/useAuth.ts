@@ -66,7 +66,9 @@ export const authClient = createAuthClient({
           'Origin': 'https://imbod.com', // Spoof Origin for SSR backend checks
           'Connection': 'close'
       } : undefined,
-      dispatcher
+      dispatcher,
+      retry: 3,
+      retryDelay: 1000,
   }
 })
 

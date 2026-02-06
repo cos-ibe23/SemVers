@@ -63,7 +63,8 @@ export const authClient = createAuthClient({
   basePath: "/v1/auth",
   fetchOptions: {
       headers: import.meta.server ? {
-          'Origin': 'https://imbod.com' // Spoof Origin for SSR backend checks
+          'Origin': 'https://imbod.com', // Spoof Origin for SSR backend checks
+          'Connection': 'close'
       } : undefined,
       dispatcher
   }

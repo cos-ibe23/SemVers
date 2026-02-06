@@ -50,7 +50,7 @@ const getBaseUrl = (): string => {
 }
 
 export const authClient = createAuthClient({
-  baseURL: getBaseUrl(),
+  baseURL: getBaseUrl() + "/auth",
   basePath: "/v1/auth",
   fetchOptions: {
       headers: import.meta.server ? {

@@ -4,7 +4,12 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     try {
         const { data } = await authClient.getSession({
             fetchOptions: {
-                headers: useRequestHeaders(['cookie']) as HeadersInit
+                headers: {
+                    ...useRequestHeaders(['cookie']) as HeadersInit,
+                    'Connection': 'close' // Ensure connection is closed in SSR
+                },
+                retry: 3,
+                retryDelay: 1000,
             }
         })
         

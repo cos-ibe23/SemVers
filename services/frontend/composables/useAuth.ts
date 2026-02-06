@@ -41,6 +41,11 @@ const getBaseUrl = (): string => {
          return 'http://imbod-api:80/v1'; 
     }
 
+    // 4. Client-side: Resolve relative URL to absolute
+    if (!isServer && url && url.startsWith('/')) {
+        return window.location.origin + url;
+    }
+
     return url || "https://api.imbod.com";
 }
 

@@ -1,7 +1,9 @@
+import { authClient } from "~/composables/useAuth"
+
 export default defineNuxtRouteMiddleware(async (to, from) => {
-    const session = useSession()
+    const { data } = await authClient.getSession()
     
-    if (!session.value?.data) {
+    if (!data) {
         return navigateTo('/login')
     }
 })

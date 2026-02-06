@@ -4,47 +4,43 @@ import { createAuthClient } from "better-auth/vue"
 const getBaseUrl = (): string => {
     let url: string | undefined;
 
-    // Detect Server Environment
+    // Detect Server Environment - Robust Check
     const isServer = import.meta.server || typeof window === 'undefined';
 
     // 1. Try Nuxt Runtime Config (Preferred)
     try {
-        const config = useRuntimeConfig()
+        const config = useRuntimeConfig();
+        // Check for apiProxyTarget (private key, server only)
         if (isServer && config.apiProxyTarget) {
-            return config.apiProxyTarget as string
-
+             return config.apiProxyTarget as string;
         }
         if (config.public?.apiBase) {
-            url = config.public.apiBase
+            url = config.public.apiBase;
         }
     } catch (e) {
-        // useRuntimeConfig not available
+        // useRuntimeConfig not available (e.g. called outside of context)
     }
 
-    // 2. Try process.env / import.meta.env
-    if (!url) {
-        // @ts-ignore
-        const env = import.meta.env || (typeof process !== 'undefined' ? process.env : {});
-        url = env.NUXT_PUBLIC_API_BASE || env.NUXT_API_PROXY_TARGET;
-    }
-
-    // 3. Server-side Safety Check: Enforce Absolute URL
-    if (isServer) {
-        // If we have a proxy target in env, use it (Higher priority than relative apiBase)
-        // @ts-ignore
-        const envProxy = (import.meta.env || (typeof process !== 'undefined' ? process.env : {})).NUXT_API_PROXY_TARGET;
-        if (envProxy) {
-            return envProxy;
+    // 2. Try process.env for Server Side (Fallback)
+    if (isServer && typeof process !== 'undefined' && process.env) {
+        if (process.env.NUXT_API_PROXY_TARGET) {
+            return process.env.NUXT_API_PROXY_TARGET;
         }
-
-        // If URL is relative or missing, we MUST providing a fallback to prevent 500 error
+        // If we only found a relative URL so far, try to construct absolute
+        // But better to just default to the known internal service if variable is missing
         if (!url || url.startsWith('/')) {
-            console.warn('SSR API URL is relative but no proxy target found. Defaulting to internal service http://imbod-api:80/v1');
-            return 'http://imbod-api:80/v1'; // Default to prod service name as last resort
+             console.warn('[useAuth] SSR Environment detected but NUXT_API_PROXY_TARGET is missing. Defaulting to internal service.');
+             return 'http://imbod-api:80/v1'; 
         }
     }
 
-    // 4. Client-side Fallback
+    // 3. Client-side or Fallback
+    // If we are on server and still have a relative URL, we MUST fix it.
+    if (isServer && (!url || url.startsWith('/'))) {
+         // This block shouldn't be reached if step 2 worked, but as safety net:
+         return 'http://imbod-api:80/v1'; 
+    }
+
     return url || "https://api.imbod.com";
 }
 

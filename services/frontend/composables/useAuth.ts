@@ -51,7 +51,7 @@ const getBaseUrl = (): string => {
 
 export const authClient = createAuthClient({
   baseURL: getBaseUrl(),
-  basePath: "/v1/auth",
+  basePath: "/auth",
   fetchOptions: {
       headers: import.meta.server ? {
           'Origin': 'https://imbod.com' // Spoof Origin for SSR backend checks

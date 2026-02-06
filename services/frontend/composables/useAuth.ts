@@ -30,7 +30,7 @@ const getBaseUrl = (): string => {
         // But better to just default to the known internal service if variable is missing
         if (!url || url.startsWith('/')) {
              console.warn('[useAuth] SSR Environment detected but NUXT_API_PROXY_TARGET is missing. Defaulting to internal service.');
-             return 'http://imbod-api-dev:80/v1'; 
+             return 'http://imbod-api-dev:80'; 
         }
     }
 
@@ -38,7 +38,7 @@ const getBaseUrl = (): string => {
     // If we are on server and still have a relative URL, we MUST fix it.
     if (isServer && (!url || url.startsWith('/'))) {
          // This block shouldn't be reached if step 2 worked, but as safety net:
-         return 'http://imbod-api-dev:80/v1'; 
+         return 'http://imbod-api-dev:80'; 
     }
 
     // 4. Client-side: Resolve relative URL to absolute
@@ -50,7 +50,7 @@ const getBaseUrl = (): string => {
 }
 
 export const authClient = createAuthClient({
-  baseURL: getBaseUrl() + "/auth",
+  baseURL: getBaseUrl(),
   basePath: "/v1/auth",
   fetchOptions: {
       headers: import.meta.server ? {

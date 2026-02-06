@@ -2,7 +2,11 @@ import { authClient } from "~/composables/useAuth"
 
 export default defineNuxtRouteMiddleware(async (to, from) => {
     try {
-        const { data } = await authClient.getSession()
+        const { data } = await authClient.getSession({
+            fetchOptions: {
+                headers: useRequestHeaders(['cookie']) as HeadersInit
+            }
+        })
         
         if (!data) {
             return navigateTo('/login')

@@ -43,7 +43,7 @@ const getBaseUrl = (): string => {
 
     // 4. Client-side: Resolve relative URL to absolute
     if (!isServer && url && url.startsWith('/')) {
-        return window.location.origin + url;
+        return window.location.origin;
     }
 
     return url || "https://api.imbod.com";
@@ -51,7 +51,7 @@ const getBaseUrl = (): string => {
 
 export const authClient = createAuthClient({
   baseURL: getBaseUrl(),
-  basePath: "/auth",
+  basePath: "/v1/auth",
   fetchOptions: {
       headers: import.meta.server ? {
           'Origin': 'https://imbod.com' // Spoof Origin for SSR backend checks

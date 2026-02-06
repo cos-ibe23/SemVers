@@ -1,4 +1,5 @@
 import { createAuthClient } from "better-auth/vue"
+import { Agent } from "undici"
 
 // Use runtime config to get the API URL (set in .env)
 const getBaseUrl = (): string => {
@@ -55,7 +56,11 @@ export const authClient = createAuthClient({
   fetchOptions: {
       headers: import.meta.server ? {
           'Origin': 'https://imbod.com' // Spoof Origin for SSR backend checks
-      } : undefined
+      } : undefined,
+      dispatcher: import.meta.server ? new Agent({
+        keepAliveTimeout: 10,
+        keepAliveMaxTimeout: 10,
+      }) : undefined
   }
 })
 

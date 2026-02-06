@@ -1,15 +1,14 @@
-import { authClient } from "~/composables/useAuth"
+import { authClient, serverFetchOptions } from "~/composables/useAuth"
 
 export default defineNuxtRouteMiddleware(async (to, from) => {
     try {
         const { data } = await authClient.getSession({
             fetchOptions: {
+                ...serverFetchOptions,
                 headers: {
+                    ...serverFetchOptions.headers,
                     ...useRequestHeaders(['cookie']) as HeadersInit,
-                    'Connection': 'close' // Ensure connection is closed in SSR
-                },
-                retry: 3,
-                retryDelay: 1000,
+                }
             }
         })
         

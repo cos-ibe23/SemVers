@@ -18,4 +18,10 @@ export default defineNuxtConfig({
   routeRules: {
     '/v1/**': { proxy: process.env.NUXT_API_PROXY_TARGET ? `${process.env.NUXT_API_PROXY_TARGET}/**` : 'http://localhost:4000/v1/**' },
   },
+
+  vite: {
+    define: {
+      'process.env': {},
+    }
+  }
 })

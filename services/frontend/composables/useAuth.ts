@@ -58,10 +58,7 @@ if (import.meta.server) {
   });
 }
 
-export const authClient = createAuthClient({
-  baseURL: getBaseUrl(),
-  basePath: "/v1/auth",
-  fetchOptions: {
+export const serverFetchOptions = {
       headers: import.meta.server ? {
           'Origin': 'https://imbod.com', // Spoof Origin for SSR backend checks
           'Connection': 'close'
@@ -69,7 +66,12 @@ export const authClient = createAuthClient({
       dispatcher,
       retry: 3,
       retryDelay: 1000,
-  }
+}
+
+export const authClient = createAuthClient({
+  baseURL: getBaseUrl(),
+  basePath: "/v1/auth",
+  fetchOptions: serverFetchOptions
 })
 
 export const {

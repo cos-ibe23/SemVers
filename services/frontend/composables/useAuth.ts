@@ -5,29 +5,13 @@ const getBaseUrl = (): string => {
     // Detect Server Environment
     const isServer = import.meta.server || typeof window === 'undefined';
 
-    // SSR: Use relative URL to route through Nuxt's proxy (defined in nuxt.config.ts)
-    // This avoids direct pod-to-pod HTTP calls which are causing ECONNRESET
+    // SSR: Use relative root to route through Nuxt's proxy
     if (isServer) {
-        return '/v1';
+        return '';  // Empty string = relative to current origin
     }
 
-    // Client-side: Use runtime config or construct from window.location
-    try {
-        const config = useRuntimeConfig();
-        if (config.public?.apiBase) {
-            const apiBase = config.public.apiBase;
-            // If relative, resolve to absolute
-            if (apiBase.startsWith('/')) {
-                return window.location.origin + apiBase;
-            }
-            return apiBase;
-        }
-    } catch (e) {
-        // useRuntimeConfig not available
-    }
-
-    // Fallback: construct from current origin
-    return window.location.origin + '/v1';
+    // Client-side: Use absolute origin only (no path)
+    return window.location.origin;
 }
 
 let dispatcher: any;
@@ -51,7 +35,7 @@ export const serverFetchOptions = {
 
 export const authClient = createAuthClient({
   baseURL: getBaseUrl(),
-  basePath: "/auth",
+  basePath: "/v1/auth",  // Full path for both SSR and client
   fetchOptions: serverFetchOptions
 })
 

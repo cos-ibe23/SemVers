@@ -2,51 +2,32 @@ import { createAuthClient } from "better-auth/vue"
 
 // Use runtime config to get the API URL (set in .env)
 const getBaseUrl = (): string => {
-    let url: string | undefined;
-
-    // Detect Server Environment - Robust Check
+    // Detect Server Environment
     const isServer = import.meta.server || typeof window === 'undefined';
 
-    // 1. Try Nuxt Runtime Config (Preferred)
+    // SSR: Use relative URL to route through Nuxt's proxy (defined in nuxt.config.ts)
+    // This avoids direct pod-to-pod HTTP calls which are causing ECONNRESET
+    if (isServer) {
+        return '/v1';
+    }
+
+    // Client-side: Use runtime config or construct from window.location
     try {
         const config = useRuntimeConfig();
-        // Check for apiProxyTarget (private key, server only)
-        if (isServer && config.apiProxyTarget) {
-             return config.apiProxyTarget as string;
-        }
         if (config.public?.apiBase) {
-            url = config.public.apiBase;
+            const apiBase = config.public.apiBase;
+            // If relative, resolve to absolute
+            if (apiBase.startsWith('/')) {
+                return window.location.origin + apiBase;
+            }
+            return apiBase;
         }
     } catch (e) {
-        // useRuntimeConfig not available (e.g. called outside of context)
+        // useRuntimeConfig not available
     }
 
-    // 2. Try process.env for Server Side (Fallback)
-    if (isServer && typeof process !== 'undefined' && process.env) {
-        if (process.env.NUXT_API_PROXY_TARGET) {
-            return process.env.NUXT_API_PROXY_TARGET;
-        }
-        // If we only found a relative URL so far, try to construct absolute
-        // But better to just default to the known internal service if variable is missing
-        if (!url || url.startsWith('/')) {
-             console.warn('[useAuth] SSR Environment detected but NUXT_API_PROXY_TARGET is missing. Defaulting to internal service.');
-             return 'http://imbod-api-dev:80'; 
-        }
-    }
-
-    // 3. Client-side or Fallback
-    // If we are on server and still have a relative URL, we MUST fix it.
-    if (isServer && (!url || url.startsWith('/'))) {
-         // This block shouldn't be reached if step 2 worked, but as safety net:
-         return 'http://imbod-api-dev:80'; 
-    }
-
-    // 4. Client-side: Resolve relative URL to absolute
-    if (!isServer && url && url.startsWith('/')) {
-        return window.location.origin;
-    }
-
-    return url || "https://api.imbod.com";
+    // Fallback: construct from current origin
+    return window.location.origin + '/v1';
 }
 
 let dispatcher: any;
@@ -70,7 +51,7 @@ export const serverFetchOptions = {
 
 export const authClient = createAuthClient({
   baseURL: getBaseUrl(),
-  basePath: "/v1/auth",
+  basePath: "/auth",
   fetchOptions: serverFetchOptions
 })
 

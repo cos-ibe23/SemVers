@@ -1,6 +1,12 @@
 import { authClient, serverFetchOptions } from "~/composables/useAuth"
 
 export default defineNuxtRouteMiddleware(async (to, from) => {
+    // Skip auth check during SSR - only run client-side
+    // This prevents issues where client-side login sets cookies that aren't available in SSR context
+    if (import.meta.server) {
+        return;
+    }
+    
     let retries = 3;
     let lastError;
 

@@ -19,15 +19,15 @@ async function handleLogin() {
     const { data, error: authError } = await signIn.email({
       email: email.value,
       password: password.value,
-      callbackURL: '/'
+      callbackURL: '/dashboard'
     })
     
     if (authError) {
       console.error('Auth Error:', authError)
       error.value = authError.message || 'Failed to login'
     } else {
-      console.log('Login successful, navigating to /')
-      navigateTo('/')
+      console.log('Login successful, navigating to /dashboard')
+      navigateTo('/dashboard')
     }
   } catch (err: any) {
     console.error('Unexpected Login Error:', err)

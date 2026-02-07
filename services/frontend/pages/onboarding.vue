@@ -45,7 +45,7 @@ async function handleOnboarding() {
             body: form.value,
         })
         
-        navigateTo('/')
+        navigateTo('/dashboard')
     } catch (err: any) {
         error.value = err.data?.message || err.message || 'Failed to onboard'
     } finally {

@@ -7,7 +7,7 @@ defineProps<Props>()
 const emit = defineEmits(['close'])
 
 const links = [
-  { label: 'Dashboard', to: '/', icon: 'home' },
+  { label: 'Dashboard', to: '/dashboard', icon: 'home' },
   { label: 'Create Box', to: '/box/create', icon: 'box' },
   { label: 'Create Pickup', to: '/pickup/create', icon: 'truck' },
   { label: 'Shipments', to: '/shipments', icon: 'ship' },

@@ -16,7 +16,10 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
                 }
             })
             
+            console.log('[Auth Middleware] Session data:', data);
+            
             if (!data) {
+                console.warn('[Auth Middleware] No session data, redirecting to login');
                 return navigateTo('/login')
             }
             return; // Success

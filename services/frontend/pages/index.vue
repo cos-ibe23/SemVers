@@ -10,7 +10,7 @@ const { data: session } = useSession()
 const { public: { apiBase } } = useRuntimeConfig()
 
 // Use fetch directly for now as we don't have a typed API client generated yet
-const { data: boxes, pending, error } = await useFetch(`${apiBase}/v1/boxes`, {
+const { data: boxes, pending, error } = await useFetch(`${apiBase}/boxes`, {
   headers: {
       // BetterAuth handles cookies, but if we need bearer:
       // headers: { Authorization: `Bearer ${token}` }

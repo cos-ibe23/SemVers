@@ -6,7 +6,7 @@ definePageMeta({
 
 const { public: { apiBase } } = useRuntimeConfig()
 
-const { data: boxes, pending, error } = await useFetch(`${apiBase}/v1/boxes`)
+const { data: boxes, pending, error } = await useFetch(`${apiBase}/boxes`)
 </script>
 
 <template>

@@ -22,7 +22,7 @@ async function handleSubmit() {
   error.value = ''
   
   try {
-    await $fetch(`${apiBase}/v1/boxes`, {
+    await $fetch(`${apiBase}/boxes`, {
       method: 'POST',
       body: {
           ...form.value,

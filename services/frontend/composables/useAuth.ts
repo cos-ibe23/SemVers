@@ -5,9 +5,10 @@ const getBaseUrl = (): string => {
     // Detect Server Environment
     const isServer = import.meta.server || typeof window === 'undefined';
 
-    // SSR: Use relative root to route through Nuxt's proxy
+    // SSR: Use localhost to route through Nuxt's own server/proxy
+    // This creates absolute URLs that Nuxt's proxy can handle
     if (isServer) {
-        return '';  // Empty string = relative to current origin
+        return 'http://localhost:3000';
     }
 
     // Client-side: Use absolute origin only (no path)

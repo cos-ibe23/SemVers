@@ -10,7 +10,7 @@
     "rootDir": "",
     "declaration": true,
     "resolveJsonModule": true,
-    "baseUrl": "",
+    "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
       "@test/*": ["test/*"]

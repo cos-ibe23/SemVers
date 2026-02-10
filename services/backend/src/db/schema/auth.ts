@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, varchar } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, boolean, varchar, index } from 'drizzle-orm/pg-core';
 import { createSelectSchema } from 'drizzle-zod';
 import { z } from 'zod';
 import { UserRoles } from '../../permissions/types';
@@ -34,6 +34,11 @@ export const user = pgTable('user', {
     
     // Vouching status
     verificationStatus: varchar('verification_status', { length: 20 }).notNull().default('UNVERIFIED'),
+}, (table) => {
+    return {
+        emailIdx: index('user_email_idx').on(table.email),
+        isSystemUserIdx: index('user_is_system_user_idx').on(table.isSystemUser),
+    };
 });
 
 // Zod schemas for user
@@ -110,6 +115,11 @@ export const session = pgTable('session', {
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
     deletedAt: timestamp('deleted_at'), // Soft delete
+}, (table) => {
+    return {
+        tokenIdx: index('session_token_idx').on(table.token),
+        userIdIdx: index('session_user_id_idx').on(table.userId),
+    };
 });
 
 export const account = pgTable('account', {
@@ -129,6 +139,11 @@ export const account = pgTable('account', {
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
     deletedAt: timestamp('deleted_at'), // Soft delete
+}, (table) => {
+    return {
+        userIdIdx: index('account_user_id_idx').on(table.userId),
+        providerIdIdx: index('account_provider_id_idx').on(table.providerId),
+    };
 });
 
 export const verification = pgTable('verification', {
